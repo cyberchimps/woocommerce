@@ -81,6 +81,17 @@ function woocommerce_thankyou( $atts ) {
 					</li>
 				</ul>
 				<div class="clear"></div>
+				
+						<?php if ($downloads = $woocommerce->customer->get_downloadable_products()) : ?>
+		<h2><?php _e('Available downloads', 'woothemes'); ?></h2>
+		<ul class="digital-downloads">
+			<?php foreach ($downloads as $download) : ?>
+				<li><?php if (is_numeric($download['downloads_remaining'])) : ?><span class="count"><?php echo $download['downloads_remaining'] . _n(' download Remaining', ' downloads Remaining', $download['downloads_remaining'], 'woothemes'); ?></span><?php endif; ?> <a href="<?php echo esc_url( $download['download_url'] ); ?>"><?php echo $download['download_name']; ?></a></li>
+			<?php endforeach; ?>
+		</ul>
+		<?php endif; ?>	
+		
+		<strong>Visit your account page <a href="http://cyberchimps.com/my-account/">here</a></strong>
 				<?php
 			
 			endif;

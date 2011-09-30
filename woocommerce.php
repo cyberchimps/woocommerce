@@ -554,10 +554,3 @@ if ( ! function_exists('readfile_chunked')) {
     }
 }
 
-/**
- * Cache
- **/
-function woocommerce_prevent_sidebar_cache() {
-	echo '<!--mfunc get_sidebar() --><!--/mfunc-->';
-}
-add_action('get_sidebar', 'woocommerce_prevent_sidebar_cache');
