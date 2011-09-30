@@ -63,12 +63,6 @@ class woocommerce_checkout {
 				'required' 		=> true, 
 				'class' 		=> array('form-row-first') 
 				),
-			'billing_phone' 	=> array( 
-				'label' 		=> __('Phone', 'woothemes'), 
-				'placeholder' 	=> __('Phone number', 'woothemes'), 
-				'required' 		=> true, 
-				'class' 		=> array('form-row-last') 
-				)
 		));
 		
 		// Define shipping fields in an array. This can be hooked into and filtered if you wish to change/add anything.
