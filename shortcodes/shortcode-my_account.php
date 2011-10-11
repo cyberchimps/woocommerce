@@ -32,6 +32,7 @@ function woocommerce_my_account( $atts ) {
 		?>
 		<p><?php echo sprintf( __('Hello, <strong>%s</strong>. From your account dashboard you can view your recent orders, manage your shipping and billing addresses and <a href="%s">change your password</a>.', 'woothemes'), $current_user->display_name, get_permalink(get_option('woocommerce_change_password_page_id'))); ?></p>
 		
+		<?php do_action('woocommerce_before_my_account'); ?>
 		
 		<?php if ($downloads = $woocommerce->customer->get_downloadable_products()) : ?>
 		<h2><?php _e('Available downloads', 'woothemes'); ?></h2>
@@ -65,7 +66,10 @@ function woocommerce_my_account( $atts ) {
 						<td><time title="<?php echo esc_attr( strtotime($order->order_date) ); ?>"><?php echo date(get_option('date_format'), strtotime($order->order_date)); ?></time></td>
 						<td><address><?php if ($order->formatted_shipping_address) echo $order->formatted_shipping_address; else echo '&ndash;'; ?></address></td>
 						<td><?php echo woocommerce_price($order->order_total); ?></td>
-						<td><?php echo $order->status; ?></td>
+						<td><?php 
+							$status = get_term_by('slug', $order->status, 'shop_order_status');
+							echo $status->name; 
+						?></td>
 						<td style="text-align:right; white-space:nowrap;">
 							<?php if (in_array($order->status, array('pending', 'failed'))) : ?>
 								<a href="<?php echo esc_url( $order->get_checkout_payment_url() ); ?>" class="button pay"><?php _e('Pay', 'woothemes'); ?></a>
@@ -143,6 +147,7 @@ function woocommerce_my_account( $atts ) {
 		
 		</div><!-- /.col2-set -->
 		<?php
+		do_action('woocommerce_after_my_account');
 		
 	else :
 		
@@ -461,7 +466,9 @@ function woocommerce_view_order() {
 			
 			echo '<p>' . sprintf( __('Order <mark>#%s</mark> made on <mark>%s</mark>', 'woothemes'), $order->id, date(get_option('date_format'), strtotime($order->order_date)) );
 			
-			echo sprintf( __('. Order status: <mark>%s</mark>', 'woothemes'), $order->status );
+			$status = get_term_by('slug', $order->status, 'shop_order_status');
+			
+			echo sprintf( __('. Order status: <mark>%s</mark>', 'woothemes'), $status->name );
 			
 			echo '.</p>';
 			?>

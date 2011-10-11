@@ -10,7 +10,6 @@
 
 class woocommerce_tax {
 	
-	var $total;
 	var $rates;
 	
 	/**
@@ -110,6 +109,8 @@ class woocommerce_tax {
 	 */
 	function get_rate( $tax_class = '' ) {
 		global $woocommerce;
+		
+		$tax_class = sanitize_title($tax_class);
 		
 		/* Checkout uses customer location, otherwise use store base rate */
 		if ( defined('WOOCOMMERCE_CHECKOUT') && WOOCOMMERCE_CHECKOUT ) :
@@ -233,28 +234,21 @@ class woocommerce_tax {
 	 * @return  int		
 	 */
 	function calc_tax( $price, $rate, $price_includes_tax = true ) {
-	
-		// To avoid float roudning errors, work with integers (pence)
-		$price = round($price * 100, 0);
-		$math_rate = $rate;
+
+		$price = round($price * 100, 0);	// To avoid float rounding errors, work with integers (pence)
 
 		if ($price_includes_tax) :
 
-			$math_rate = ($math_rate / 100) + 1;
-
-			//$price_ex = round($price / $math_rate);
-			//$tax_amount = round($price - $price_ex);
-			$tax_amount = $price - ( $price / $math_rate);
+			$rate = ($rate / 100) + 1;
+			$tax_amount = $price - ( $price / $rate);
 			
 		else :
 			$tax_amount = $price * ($rate/100);
 		endif;
+
+		$tax_amount = round($tax_amount);	// Round to the nearest pence
+		$tax_amount = $tax_amount / 100; 	// Back to pounds
 		
-		// Round to the nearest pence
-		$tax_amount = round($tax_amount);
-		$tax_amount = $tax_amount / 100; // Back to pounds
-		
-		//return number_format($tax_amount, 4, '.', '');
 		return number_format($tax_amount, 2, '.', '');
 	}
 	

@@ -87,55 +87,68 @@ function woocommerce_get_template($template_name, $require_once = true) {
 	else load_template( $woocommerce->plugin_path() . '/templates/' . $template_name , $require_once);
 }
 
-/**
- * Get other templates (e.g. product attributes) - path
- */
-function woocommerce_get_template_file_url($template_name, $ssl = false) {
-	global $woocommerce;
-	if (file_exists( STYLESHEETPATH . '/' . WOOCOMMERCE_TEMPLATE_URL . $template_name )) 
-		$return = get_bloginfo('template_url') . '/' . WOOCOMMERCE_TEMPLATE_URL . $template_name; 
-	elseif (file_exists( STYLESHEETPATH . '/' . $template_name )) 
-		$return = get_bloginfo('template_url') . '/' . $template_name; 
-	else 
-		$return = $woocommerce->plugin_url() . '/templates/' . $template_name;
-	
-	if (get_option('woocommerce_force_ssl_checkout')=='yes' || is_ssl()) :
-		if ($ssl) $return = str_replace('http:', 'https:', $return);
-	endif;
-	
-	return $return;
-}
-
 
 /**
- * Front page archive/shop template
+ * Front page archive/shop template applied to main loop
  */
 if (!function_exists('woocommerce_front_page_archive')) {
-	function woocommerce_front_page_archive() {
+	function woocommerce_front_page_archive( $query ) {
 			
-		global $paged, $woocommerce;
+		global $paged, $woocommerce, $wp_the_query, $wp_query;
 		
-		if ( is_front_page() && is_page( get_option('woocommerce_shop_page_id') )) :
+		if ( defined('SHOP_IS_ON_FRONT') ) :
+		
+			wp_reset_query();
 			
-			if ( get_query_var('paged') ) {
-			    $paged = get_query_var('paged');
-			} else if ( get_query_var('page') ) {
-			    $paged = get_query_var('page');
-			} else {
-			    $paged = 1;
-			}
-			
-			add_filter( 'parse_query', array( &$woocommerce->query, 'parse_query') );
-			
-			query_posts( array( 'page_id' => '', 'post_type' => 'product', 'paged' => $paged ) );
-			
-			define('SHOP_IS_ON_FRONT', true);
-
+			// Only apply to front_page
+			if ( $query === $wp_the_query ) :
+				
+				if (get_query_var('paged')) :
+					$paged = get_query_var('paged'); 
+				else :
+					$paged = (get_query_var('page')) ? get_query_var('page') : 1;
+				endif;
+	
+				// Filter the query
+				add_filter( 'parse_query', array( &$woocommerce->query, 'parse_query') );
+				
+				// Query the products
+				$wp_query->query( array( 'page_id' => '', 'p' => '', 'post_type' => 'product', 'paged' => $paged ) );
+				
+				// get products in view (for use by widgets)
+				$woocommerce->query->get_products_in_view();
+				
+				// Remove the query manipulation
+				remove_filter( 'parse_query', array( &$woocommerce->query, 'parse_query') ); 
+				remove_action('loop_start', 'woocommerce_front_page_archive', 1);
+	
+			endif;
+		
 		endif;
 	}
 }
-add_action('wp', 'woocommerce_front_page_archive', 1);
+add_action('loop_start', 'woocommerce_front_page_archive', 1);
 
+/**
+ * Detect frontpage shop and fix pagination on static front page
+ **/
+function woocommerce_front_page_archive_paging_fix() {
+		
+	if ( is_front_page() && is_page( get_option('woocommerce_shop_page_id') )) :
+		
+		if (get_query_var('paged')) :
+			$paged = get_query_var('paged'); 
+		else :
+			$paged = (get_query_var('page')) ? get_query_var('page') : 1;
+		endif;
+			
+		query_posts( array( 'page_id' => get_option('woocommerce_shop_page_id'), 'is_paged' => true, 'paged' => $paged ) );
+		
+		define('SHOP_IS_ON_FRONT', true);
+		
+	endif;
+}
+add_action('wp', 'woocommerce_front_page_archive_paging_fix', 1);
 
 /**
  * Add Body classes based on page/template

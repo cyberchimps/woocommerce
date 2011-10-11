@@ -41,7 +41,7 @@ jQuery(document).ready(function($) {
 				}
 				
 				// Block widgets and fragments
-				$('.widget_shopping_cart, .shop_table.cart, .updating').fadeTo('400', '0.6').block({message: null, overlayCSS: {background: 'transparent url(' + woocommerce_params.plugin_url + '/assets/images/ajax-loader.gif) no-repeat center', opacity: 0.6}});
+				$('.widget_shopping_cart, .shop_table.cart, .updating, .cart_totals').fadeTo('400', '0.6').block({message: null, overlayCSS: {background: 'transparent url(' + woocommerce_params.plugin_url + '/assets/images/ajax-loader.gif) no-repeat center', opacity: 0.6}});
 				
 				// Changes button classes
 				$(thisbutton).addClass('added');
@@ -73,14 +73,20 @@ jQuery(document).ready(function($) {
 					$('.widget_shopping_cart, .updating').css('opacity', '1').unblock();
 				}
 				
-				// Cart load
+				// Cart page elements
 				$('.shop_table.cart').load( window.location + ' .shop_table.cart:eq(0) > *', function() {
 					
 					$("div.quantity:not(.buttons_added), td.quantity:not(.buttons_added)").addClass('buttons_added').append('<input type="button" value="+" id="add1" class="plus" />').prepend('<input type="button" value="-" id="minus1" class="minus" />');
 					
 					$('.shop_table.cart').css('opacity', '1').unblock();
 					
-				} );
+				});
+				
+				
+				$('.cart_totals').load( window.location + ' .cart_totals:eq(0) > *', function() {
+					$('.cart_totals').css('opacity', '1').unblock();
+				});
+				
 				
 				// Trigger event so themes can refresh other areas
 				$('body').trigger('added_to_cart');
@@ -292,26 +298,35 @@ jQuery(document).ready(function($) {
     //disable option fields that are unavaiable for current set of attributes
     function update_variation_values(variations) {
         
-        var current_attr_select = $('.variations select').not('[disabled]').last();
-        current_attr_select.find('option:gt(0)').attr('disabled', 'disabled');
-        
-        var current_attr_name = current_attr_select.attr('name');
-        
-        for(num in variations) {
-            var attributes = variations[num].attributes;
-            
-            for(attr_name in attributes) {
-                var attr_val = attributes[attr_name];
-                
-                if(attr_name == current_attr_name) {
-                    if (attr_val) {
-                    	current_attr_select.find('option[value="'+attr_val+'"]').removeAttr('disabled');
-                    } else {
-                    	current_attr_select.find('option').removeAttr('disabled');
-                    }
-                }
-            }
-        }
+        // Loop through selects and disable/enable options based on selections
+        $('.variations select').each(function( index, el ){
+        	
+        	current_attr_select = $(el);
+        	
+        	// Disable all
+        	current_attr_select.find('option:gt(0)').attr('disabled', 'disabled');
+        	
+        	// Get name
+	        var current_attr_name 	= current_attr_select.attr('name');
+	        
+	        // Loop through variations
+	        for(num in variations) {
+	            var attributes = variations[num].attributes;
+	            
+	            for(attr_name in attributes) {
+	                var attr_val = attributes[attr_name];
+	                
+	                if(attr_name == current_attr_name) {
+	                    if (attr_val) {
+	                    	current_attr_select.find('option[value="'+attr_val+'"]').removeAttr('disabled');
+	                    } else {
+	                    	current_attr_select.find('option').removeAttr('disabled');
+	                    }
+	                }
+	            }
+	        }
+        	
+        });
         
     }
     
@@ -324,7 +339,8 @@ jQuery(document).ready(function($) {
 
         var variation_image = variation.image_src;
         var variation_link = variation.image_link;
-
+		
+		$('.variations_button').show();
         $('.single_variation').html( variation.price_html + variation.availability_html );
 
         if (!o_src) {
@@ -343,70 +359,61 @@ jQuery(document).ready(function($) {
             $(link).attr('href', o_link);
         }
 
-        $('.single_variation_wrap').slideDown();
+        $('.single_variation_wrap').slideDown('200');
     }
 	
 	//when one of attributes is changed - check everything to show only valid options
-    function check_variations() {
-        $('form input[name=variation_id]').val('');
-        $('.single_variation_wrap').hide();
-        $('.single_variation').text('');
-        
+    function check_variations( exclude ) {
 		var all_set = true;
 		var current_settings = {};
         
 		$('.variations select').each(function(){
-			if ($(this).val().length == 0) {
-                all_set = false;
-            }
-            // Get value
-            value = $(this).val();
-            value = value.replace('"', '&quot;');
 			
-			// Add to settings array
-			current_settings[$(this).attr('name')] = value;
+			if ( exclude && $(this).attr('name') == exclude ) {
+				
+				all_set = false;
+				current_settings[$(this).attr('name')] = '';
+				
+			} else {
+				if ($(this).val().length == 0) all_set = false;
+
+	            // Get value
+	            value = $(this).val();
+	            value = value.replace('"', '&quot;');
+				
+				// Add to settings array
+				current_settings[$(this).attr('name')] = value;
+			}
+				
 		});
         
         var matching_variations = find_matching_variations(current_settings);
         
         if(all_set) {
-            var variation = matching_variations.pop();
-            
-            $('form input[name=variation_id]').val(variation.variation_id);
-            
-            show_variation(variation);
+        	var variation = matching_variations.pop();
+        	if (variation) {
+            	$('form input[name=variation_id]').val(variation.variation_id);
+            	show_variation(variation);
+            }
         } else {
             update_variation_values(matching_variations);
         }
     }
 
 	$('.variations select').change(function(){
-        //make sure that only selects before this one, and one after this are enabled
-        var index = $(this).data('index');
-        
-        if($(this).val().length > 0) {
-            index += 1;
-        }
-        
-        var selects = $('.variations select');
-        selects.filter(':lt('+index+')').removeAttr('disabled');
-        selects.filter(':eq('+index+')').removeAttr('disabled').val('');
-        selects.filter(':gt('+index+')').attr('disabled', 'disabled').val('');
-        
-		check_variations($(this));
 		
-		if($().uniform) {
-			$.uniform.update();
-		}
+		$('form input[name=variation_id]').val('');
+        $('.single_variation_wrap').hide();
+        $('.single_variation').text('');
+		check_variations();
+		$(this).blur();
+		if($().uniform) $.uniform.update();
+		
+	}).focus(function(){
+		
+		check_variations( $(this).attr('name') );
+
 	});
-    
-    //disable all but first select field
-    $('.variations select:gt(0)').attr('disabled', 'disabled');
-    
-    // index all selects
-    $.each($('.variations select'), function(i, item){
-        $(item).data('index', i);
-    });
 	
 	if (woocommerce_params.is_cart==1) {
 	

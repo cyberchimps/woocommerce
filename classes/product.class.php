@@ -26,6 +26,9 @@ class woocommerce_product {
 	var $sale_price;
 	var $regular_price;
 	var $weight;
+	var $length;
+	var $width;
+	var $height;
 	var $tax_status;
 	var $tax_class;
 	var $upsell_ids;
@@ -34,6 +37,8 @@ class woocommerce_product {
 	var $total_stock;
 	var $sale_price_dates_from;
 	var $sale_price_dates_to;
+	var $min_variation_price;
+	var $max_variation_price;
 	
 	/**
 	 * Loads all product data from custom fields
@@ -58,10 +63,17 @@ class woocommerce_product {
 			'sale_price'	=> '',
 			'regular_price' => '',
 			'weight'		=> '',
+			'length'		=> '',
+			'width'		=> '',
+			'height'		=> '',
 			'tax_status'	=> 'taxable',
 			'tax_class'		=> '',
 			'upsell_ids'	=> array(),
-			'crosssell_ids' => array()
+			'crosssell_ids' => array(),
+			'sale_price_dates_from' => '',
+			'sale_price_dates_to' 	=> '',
+			'min_variation_price'	=> '',
+			'max_variation_price'	=> ''
 		);
 		
 		// Load the data from the custom fields
@@ -423,7 +435,7 @@ class woocommerce_product {
 		return $this->price;
 	}
 	
-	/** Returns the price (excluding tax) */
+	/** Returns the price (excluding tax) - ignores tax_class filters since the price may *include* tax and thus needs subtracting */
 	function get_price_excluding_tax() {
 		
 		$price = $this->price;
@@ -455,13 +467,18 @@ class woocommerce_product {
 		return $price;
 	}
 	
+	/** Returns the tax class */
+	function get_tax_class() {
+		return apply_filters('woocommerce_product_tax_class', $this->tax_class, $this);
+	}
+	
 	/** Returns the base tax rate */
 	function get_tax_base_rate() {
 		
 		if ( $this->is_taxable() && get_option('woocommerce_calc_taxes')=='yes') :
 			
 			$_tax = &new woocommerce_tax();
-			$rate = $_tax->get_shop_base_rate( $this->tax_class );
+			$rate = $_tax->get_shop_base_rate( $this->tax_class ); // Get tax class directly - ignore filters
 			
 			return $rate;
 			
@@ -488,8 +505,10 @@ class woocommerce_product {
 			$price = apply_filters('woocommerce_grouped_price_html', $price, $this);
 				
 		elseif ($this->is_type('variable')) :
-		
-			$price .= '<span class="from">' . __('From: ', 'woothemes') . '</span>' . woocommerce_price($this->get_price());
+			
+			if ( !$this->min_variation_price || $this->min_variation_price !== $this->max_variation_price ) $price .= '<span class="from">' . __('From: ', 'woothemes') . '</span>';
+			
+			$price .= woocommerce_price($this->get_price());
 			
 			$price = apply_filters('woocommerce_variable_price_html', $price, $this);
 			

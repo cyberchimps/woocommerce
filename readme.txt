@@ -3,7 +3,7 @@ Contributors: woothemes
 Tags: ecommerce, e-commerce, commerce, woothemes, wordpress ecommerce, store, shop, shopping, cart, checkout, widgets, reports, shipping, tax, paypal, inventory
 Requires at least: 3.1
 Tested up to: 3.2
-Stable tag: 1.0.2
+Stable tag: 1.0.3
 
 An e-commerce toolkit that helps you sell anything. Beautifully.
 
@@ -51,9 +51,54 @@ The manual installation involves downloading the plugin and uploading it to your
 2. Using an FTP program, or your hosting control panel, upload the unzipped plugin folder to your WordPress installation’s wp-content/plugins/ directory.
 3. Activate the plugin from the Plugins menu within the WordPress admin.
 
+== FAQ ==
+
+For further documentation on using WooCommerce, please sign up for free at http://www.woothemes.com/. This will provide access to extensive WooCommerce Codex, documentation and tips.
+
 == Changelog ==
 
-= 1.0.2 - 30/09/2011 =
+= 1.1 - xx/10/2011 =
+* Added a hook for payment complete order status
+* Added woocommerce term meta api
+* Added ability to upload category thumbnails
+* Added option to show sub-categories when browing categories/the shop page
+* Zero tax rate fix
+* Filters for tax rates
+* Fixes to find rate function
+* Product dimension fields
+* Fixed archives being displayed by woocommerce_show_product_images
+* Added 'configure terms' button to attributes page to make it clearer
+* Fix for variations when an attribute has been removed
+* Fixed some localisation strings
+* Hard crop option for images (use regenerate thumbnails after toggling to redo all images)
+* Password field type for gateways API
+* Front page shop improvements/correct title tags
+* Added option for controlling product permalinks
+* Load admin css only where needed
+
+= 1.0.3 - 06/10/2011 =
+* Several minor fixes/tweaks
+* Conditionals check for existing function names
+* Made image size settings clearer
+* Cleaned up coupon code settings/write panel and added a few more hooks
+* Fixed 'product ids' setting in coupons
+* Fixed notices on shop pages due to WP_QUERY
+* Cleaned up discount types and made some helper functions for getting them
+* woocommerce_coupon_is_valid hook
+* Fixed order tracking completed time
+* Sale price affects variable product 'from:' price
+* Variation options (frontend) no longer lose your selections when changing an option
+* Gallery image field fix
+* Image 'insert into' fix
+* variable products store min and max variation price, so if they match the 'from' text is not displayed
+* Email items list fix
+* Reports chart fix
+* Fixed category ordering in widgets
+* Labels to taxonomies updated
+* Query tweak to fix tags/cats
+* Order tracking localisation
+
+= 1.0.2 - 02/10/2011 =
 * Fix in woocommerce_templates for when a shop is the front-page
 * Added esc_html/esc_attribute in review-order.php
 * Tweaked localised strings in shortcode-thankyou.php
@@ -64,6 +109,13 @@ The manual installation involves downloading the plugin and uploading it to your
 * Active menu state fix
 * Few minor typos/case changes
 * Tweaked install script so it only redirects after activation
+* Removing attributes fix
+* only style mails of WooCommerce - not all mails. This is to prevent conflicts with other plugins.
+* unique sku check only checks products
+* More security audit tweaks thanks to Mark Jaquith
+* cart totals update when adding cross-sells to cart
+* Removed the 'resave permalinks message' due to it being done automatically
+* Added support to exclude images from product page
 
 = 1.0.1 - 29/09/2011 = 
 * Fixed notices on product page

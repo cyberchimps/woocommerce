@@ -5,7 +5,6 @@
  * Actions/functions/hooks for WooCommerce related events.
  *
  *		- Update catalog ordering if posted
- *		- Add a table to $wpdb to benefit from the WordPress Metadata API
  *		- AJAX update shipping method on cart page
  *		- AJAX update order review on checkout
  *		- AJAX add to cart
@@ -33,27 +32,8 @@
 add_action('init', 'woocommerce_update_catalog_ordering');
 
 function woocommerce_update_catalog_ordering() {
-	if (isset($_POST['orderby']) && $_POST['orderby'] != '') $_SESSION['orderby'] = $_POST['orderby'];
+	if (isset($_POST['catalog_orderby']) && $_POST['catalog_orderby'] != '') $_SESSION['orderby'] = $_POST['catalog_orderby'];
 }
-
-/**
- * woocommerce_taxonomy_metadata_wpdbfix()
- *
- * Add a table to $wpdb to benefit from the WordPress Metadata API
- *
- * @since 1.0.0
- * @uses $wpdb global
- */
-add_action( 'init', 'woocommerce_taxonomy_metadata_wpdbfix', 0 );
-add_action( 'switch_blog', 'woocommerce_taxonomy_metadata_wpdbfix', 0 );
-
-function woocommerce_taxonomy_metadata_wpdbfix() {
-	global $wpdb;
-	
-	$variable_name = 'woocommerce_termmeta';
-	$wpdb->$variable_name = $wpdb->prefix . $variable_name;	
-	$wpdb->tables[] = $variable_name;
-} // End woocommerce_taxonomy_metadata_wpdbfix()
 
 /**
  * AJAX update shipping method on cart page
@@ -186,9 +166,9 @@ function woocommerce_add_order_item() {
 			WHERE $wpdb->postmeta.meta_key = 'sku'
 			AND $wpdb->posts.post_status = 'publish'
 			AND $wpdb->posts.post_type = 'shop_product'
-			AND $wpdb->postmeta.meta_value = '".$item_to_add."'
+			AND $wpdb->postmeta.meta_value = %s
 			LIMIT 1
-		"));
+		"), $item_to_add );
 		$post = get_post( $post_id );
 	endif;
 	
@@ -347,7 +327,7 @@ function woocommerce_upsell_crosssell_search_products() {
 						
 	endforeach; else : 
 	
-		?><li><?php _e('No products found', 'woocommerce'); ?></li><?php 
+		?><li><?php _e('No products found', 'woothemes'); ?></li><?php 
 		
 	endif; 
 	
@@ -726,10 +706,10 @@ function woocommerce_download_product() {
 		$downloads_remaining = $wpdb->get_var( $wpdb->prepare("
 			SELECT downloads_remaining 
 			FROM ".$wpdb->prefix."woocommerce_downloadable_product_permissions
-			WHERE user_email = '$email'
-			AND order_key = '$order'
-			AND product_id = '$download_file'
-		;") );
+			WHERE user_email = %s
+			AND order_key = %s
+			AND product_id = %s
+		;", $email, $order, $download_file ) );
 		
 		if ($downloads_remaining=='0') :
 			wp_die( sprintf(__('Sorry, you have reached your download limit for this file. <a href="%s">Go to homepage &rarr;</a>', 'woothemes'), home_url()) );
@@ -780,7 +760,9 @@ function woocommerce_download_product() {
             @ini_set('zlib.output_compression', 'Off');
 			@set_time_limit(0);
 			@set_magic_quotes_runtime(0);
+			
 			@ob_end_clean();
+			if (ob_get_level()) @ob_end_clean(); // Zip corruption fix
 			
 			header("Pragma: no-cache");
 			header("Expires: 0");
@@ -800,7 +782,7 @@ function woocommerce_download_product() {
 			header("Content-Transfer-Encoding: binary");
 							
             if ($size = @filesize($file_path)) header("Content-Length: ".$size);
-            
+
             // Serve it
             if ($remote_file) :
             	

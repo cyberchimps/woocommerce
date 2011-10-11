@@ -37,7 +37,7 @@ function woocommerce_edit_coupon_columns($columns){
 add_action('manage_shop_coupon_posts_custom_column', 'woocommerce_custom_coupon_columns', 2);
 
 function woocommerce_custom_coupon_columns($column) {
-	global $post;
+	global $post, $woocommerce;
 	
 	$type 			= get_post_meta($post->ID, 'discount_type', true);
 	$amount 		= get_post_meta($post->ID, 'coupon_amount', true);
@@ -49,7 +49,7 @@ function woocommerce_custom_coupon_columns($column) {
 
 	switch ($column) {
 		case "type" :
-			echo $type;
+			echo $woocommerce->get_coupon_discount_type($type);			
 		break;
 		case "amount" :
 			echo $amount;
@@ -335,6 +335,47 @@ function woocommerce_products_by_type() {
     endif;
 }
 
+/**
+ * Add functionality to the image uploader on product pages to exlcude an image
+ **/
+add_filter('attachment_fields_to_edit', 'woocommerce_exclude_image_from_product_page_field', 1, 2);
+add_filter('attachment_fields_to_save', 'woocommerce_exclude_image_from_product_page_field_save', 1, 2);
+
+function woocommerce_exclude_image_from_product_page_field( $fields, $object ) {
+	
+	if (!$object->post_parent) return $fields;
+	
+	$parent = get_post( $object->post_parent );
+	
+	if ($parent->post_type!=='product') return $fields;
+	
+	$exclude_image = (int) get_post_meta($object->ID, '_woocommerce_exclude_image', true);
+	
+	$label = __('Exclude image', 'woothemes');
+	
+	$html = '<input type="checkbox" '.checked($exclude_image, 1, false).' name="attachments['.$object->ID.'][woocommerce_exclude_image]" id="attachments['.$object->ID.'][woocommerce_exclude_image" />';
+	
+	$fields['woocommerce_exclude_image'] = array(
+			'label' => $label,
+			'input' => 'html',
+			'html' =>  $html,
+			'value' => '',
+			'helps' => __('Enabling this option will hide it from the product page image gallery.', 'woothemes')
+	);
+	
+	return $fields;
+}
+
+function woocommerce_exclude_image_from_product_page_field_save( $post, $attachment ) {
+
+	if (isset($_REQUEST['attachments'][$post['ID']]['woocommerce_exclude_image'])) 
+		update_post_meta($post['ID'], '_woocommerce_exclude_image', 1);
+	else 
+		update_post_meta($post['ID'], '_woocommerce_exclude_image', 0);
+				
+	return $post;
+				
+}
 
 
 /**
@@ -627,3 +668,35 @@ function woocommerce_post_updated_messages( $messages ) {
    	endif;
     return $messages;
 }
+
+
+/**
+ * Feature a product from admin
+ */
+function woocommerce_feature_product() {
+
+	if( !is_admin() ) die;
+	
+	if( !current_user_can('edit_posts') ) wp_die( __('You do not have sufficient permissions to access this page.') );
+	
+	if( !check_admin_referer()) wp_die( __('You have taken too long. Please go back and retry.', 'woothemes') );
+	
+	$post_id = isset($_GET['product_id']) && (int)$_GET['product_id'] ? (int)$_GET['product_id'] : '';
+	
+	if(!$post_id) die;
+	
+	$post = get_post($post_id);
+	if(!$post) die;
+	
+	if($post->post_type !== 'product') die;
+	
+	$product = new woocommerce_product($post->ID);
+
+	if ($product->is_featured()) update_post_meta($post->ID, 'featured', 'no');
+	else update_post_meta($post->ID, 'featured', 'yes');
+	
+	$sendback = remove_query_arg( array('trashed', 'untrashed', 'deleted', 'ids'), wp_get_referer() );
+	wp_safe_redirect( $sendback );
+
+}
+add_action('wp_ajax_woocommerce-feature-product', 'woocommerce_feature_product');

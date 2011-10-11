@@ -136,14 +136,26 @@ if (!function_exists('woocommerce_show_product_thumbnails')) {
 		
 		$thumb_id = get_post_thumbnail_id();
 		$small_thumbnail_size = apply_filters('single_product_small_thumbnail_size', 'shop_thumbnail');
-		$args = array( 'post_type' => 'attachment', 'numberposts' => -1, 'post_status' => null, 'post_parent' => $post->ID ); 
+		$args = array( 
+			'post_type' 	=> 'attachment', 
+			'numberposts' 	=> -1, 
+			'post_status' 	=> null, 
+			'post_parent' 	=> $post->ID,
+			'post__not_in'	=> array($thumb_id),
+			'post_mime_type' => 'image',
+			'meta_query' 	=> array(
+				array(
+					'key' 		=> '_woocommerce_exclude_image',
+					'value'		=> '1',
+					'compare' 	=> '!='
+				)
+			)
+		); 
 		$attachments = get_posts($args);
 		if ($attachments) :
 			$loop = 0;
 			$columns = 3;
 			foreach ( $attachments as $attachment ) : 
-				
-				if ($thumb_id==$attachment->ID) continue;
 				
 				$loop++;
 				
@@ -458,10 +470,10 @@ if (!function_exists('woocommerce_catalog_ordering')) {
 
 		?>
 		<form class="woocommerce_ordering" method="post">
-			<select name="orderby" class="orderby">
-				<option value="title" <?php if (isset($_SESSION['orderby'])) selected( $_SESSION['orderby'], 'title' ); ?>><?php _e('Alphabetically', 'woo themes'); ?></option>
+			<select name="catalog_orderby" class="orderby">
+				<option value="title" <?php if (isset($_SESSION['orderby'])) selected( $_SESSION['orderby'], 'title' ); ?>><?php _e('Alphabetically', 'woothemes'); ?></option>
 				<option value="date" <?php if (isset($_SESSION['orderby'])) selected( $_SESSION['orderby'], 'date' ); ?>><?php _e('Most Recent', 'woothemes'); ?></option>
-				<option value="price" <?php if (isset($_SESSION['orderby'])) selected( $_SESSION['orderby'], 'price' ); ?>><?php _e('Price', 'woo themes'); ?></option>
+				<option value="price" <?php if (isset($_SESSION['orderby'])) selected( $_SESSION['orderby'], 'price' ); ?>><?php _e('Price', 'woothemes'); ?></option>
 			</select>
 		</form>
 		<?php
@@ -534,8 +546,8 @@ if (!function_exists('woocommerce_get_product_thumbnail')) {
 		
 		global $post, $woocommerce;
 		
-		if (!$placeholder_width) $placeholder_width = $woocommerce->get_image_size('shop_single_image_width');
-		if (!$placeholder_height) $placeholder_height = $woocommerce->get_image_size('shop_single_image_height');
+		if (!$placeholder_width) $placeholder_width = $woocommerce->get_image_size('shop_catalog_image_width');
+		if (!$placeholder_height) $placeholder_height = $woocommerce->get_image_size('shop_catalog_image_height');
 		
 		if ( has_post_thumbnail() ) return get_the_post_thumbnail($post->ID, $size); else return '<img src="'.$woocommerce->plugin_url(). '/assets/images/placeholder.png" alt="Placeholder" width="'.$placeholder_width.'" height="'.$placeholder_height.'" />';
 		
@@ -1039,14 +1051,11 @@ function woocommerce_cross_sell_display() {
 	wp_reset_query();
 }
 
-
 /**
  * Order review table for checkout
  **/
 function woocommerce_order_review() {
-
 	woocommerce_get_template('checkout/review_order.php', false);
-
 }
 
 /**
@@ -1059,3 +1068,79 @@ function woocommerce_demo_store() {
 		echo '<p class="demo_store">'.__('This is a demo store for testing purposes &mdash; no orders shall be fulfilled.', 'woothemes').'</p>';
 	endif;
 }
+
+/**
+ * display product sub categories as thumbnails
+ **/
+function woocommerce_product_subcategories() {
+	global $woocommerce, $columns, $loop, $wp_query, $wp_the_query;
+	
+	if ($wp_query !== $wp_the_query) return; // Detect main query
+	
+	if (is_search()) return;
+	if (!is_product_category() && !is_shop()) return;
+	if (is_product_category() && get_option('woocommerce_show_subcategories')=='no') return;
+	if (is_shop() && get_option('woocommerce_shop_show_subcategories')=='no') return;
+
+	$product_cat_slug 	= get_query_var('product_cat');
+	
+	if ($product_cat_slug) :
+		$product_cat 		= get_term_by('slug', $product_cat_slug, 'product_cat');
+		$parent 			= $product_cat->term_id;
+	else :
+		$parent = 0;
+	endif;
+	
+	$args = array(
+	    'parent'                   => $parent,
+	    'orderby'                  => 'menu_order',
+	    'order'                    => 'ASC',
+	    'hide_empty'               => 1,
+	    'hierarchical'             => 0,
+	    'taxonomy'                 => 'product_cat',
+	    );
+	$categories = get_categories( $args );
+	if ($categories) foreach ($categories as $category) : $loop++;
+			
+		?>
+		<li class="product <?php if ($loop%$columns==0) echo 'last'; if (($loop-1)%$columns==0) echo 'first'; ?>">
+			
+			<?php do_action('woocommerce_before_subcategory', $category); ?>
+			
+			<a href="<?php echo get_term_link($category->slug, 'product_cat'); ?>">
+				
+				<?php do_action('woocommerce_before_subcategory_title', $category); ?>
+				
+				<h3><?php echo $category->name; ?> (<?php echo $category->count; ?>)</h3>
+				
+				<?php do_action('woocommerce_after_subcategory_title', $category); ?>
+			
+			</a>
+	
+			<?php do_action('woocommerce_after_subcategory', $category); ?>
+			
+		</li><?php 
+		
+	endforeach;
+	
+}
+
+function woocommerce_subcategory_thumbnail( $category ) {
+	global $woocommerce;
+	
+	$small_thumbnail_size 	= apply_filters('single_product_small_thumbnail_size', 'shop_thumbnail');		
+	$image_width 			= $woocommerce->get_image_size('shop_thumbnail_image_width');
+	$image_height 			= $woocommerce->get_image_size('shop_thumbnail_image_height');
+	
+	$thumbnail_id 	= get_woocommerce_term_meta( $category->term_id, 'thumbnail_id', true );
+	
+	if ($thumbnail_id) :
+		$image = wp_get_attachment_image_src( $thumbnail_id, $small_thumbnail_size );
+		$image = $image[0];
+	else :
+		$image = $woocommerce->plugin_url().'/assets/images/placeholder.png';
+	endif;
+
+	echo '<img src="'.$image.'" alt="'.$category->slug.'" width="'.$image_width.'" height="'.$image_height.'" />';
+}
+

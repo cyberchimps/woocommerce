@@ -8,51 +8,134 @@
  * @category 	Admin
  * @package 	WooCommerce
  */
- 
+
+/**
+ * Category thumbnails
+ */
+add_action('product_cat_add_form_fields', 'woocommerce_add_category_thumbnail_field');
+add_action('product_cat_edit_form_fields', 'woocommerce_edit_category_thumbnail_field', 10,2);
+
+function woocommerce_add_category_thumbnail_field() {
+	global $woocommerce;
+	?>
+	<div class="form-field">
+		<label><?php _e('Thumbnail', 'woothemes'); ?></label>
+		<div id="product_cat_thumbnail" style="float:left;margin-right:10px;"><img src="<?php echo $woocommerce->plugin_url().'/assets/images/placeholder.png' ?>" width="60px" height="60px" /></div>
+		<div style="line-height:60px;">
+			<input type="hidden" id="product_cat_thumbnail_id" name="product_cat_thumbnail_id" />
+			<button type="submit" class="upload_image_button button"><?php _e('Upload/Add image', 'woothemes'); ?></button>
+			<button type="submit" class="remove_image_button button"><?php _e('Remove image', 'woothemes'); ?></button>
+		</div>
+		<script type="text/javascript">
+			
+				window.send_to_termmeta = function(html) {
+					
+					var img = jQuery(html).find('img');
+				
+					imgurl = jQuery(img).attr('src');
+					imgclass = jQuery(img).attr('class');
+		
+					imgid = parseInt(imgclass.replace(/\D/g, ''), 10);
+					
+					jQuery('#product_cat_thumbnail_id').val(imgid);
+					jQuery('#product_cat_thumbnail img').attr('src', imgurl);
+	
+					tb_remove();
+				}
+				
+				jQuery('.upload_image_button').live('click', function(){
+					var post_id = 0;
+					
+					window.send_to_editor = window.send_to_termmeta;
+					
+					tb_show('', 'media-upload.php?post_id=' + post_id + '&amp;type=image&amp;TB_iframe=true');
+					return false;
+				});
+				
+				jQuery('.remove_image_button').live('click', function(){
+					jQuery('#product_cat_thumbnail img').attr('src', '<?php echo $woocommerce->plugin_url().'/assets/images/placeholder.png'; ?>');
+					jQuery('#product_cat_thumbnail_id').val('');
+					return false;
+				});
+			
+		</script>
+		<div class="clear"></div>
+	</div>
+	<?php
+}
+
+function woocommerce_edit_category_thumbnail_field( $term, $taxonomy ) {
+	global $woocommerce;
+	
+	$image 			= '';
+	$thumbnail_id 	= get_woocommerce_term_meta( $term->term_id, 'thumbnail_id', true );
+	if ($thumbnail_id) :
+		$image = wp_get_attachment_url( $thumbnail_id );
+	else :
+		$image = $woocommerce->plugin_url().'/assets/images/placeholder.png';
+	endif;
+	?>
+	<tr class="form-field">
+		<th scope="row" valign="top"><label><?php _e('Thumbnail', 'woothemes'); ?></label></th>
+		<td>
+			<div id="product_cat_thumbnail" style="float:left;margin-right:10px;"><img src="<?php echo $image; ?>" width="60px" height="60px" /></div>
+			<div style="line-height:60px;">
+				<input type="hidden" id="product_cat_thumbnail_id" name="product_cat_thumbnail_id" value="<?php echo $thumbnail_id; ?>" />
+				<button type="submit" class="upload_image_button button"><?php _e('Upload/Add image', 'woothemes'); ?></button>
+				<button type="submit" class="remove_image_button button"><?php _e('Remove image', 'woothemes'); ?></button>
+			</div>
+			<script type="text/javascript">
+				
+				window.send_to_termmeta = function(html) {
+					
+					var img = jQuery(html).find('img');
+				
+					imgurl = jQuery(img).attr('src');
+					imgclass = jQuery(img).attr('class');
+		
+					imgid = parseInt(imgclass.replace(/\D/g, ''), 10);
+					
+					jQuery('#product_cat_thumbnail_id').val(imgid);
+					jQuery('#product_cat_thumbnail img').attr('src', imgurl);
+	
+					tb_remove();
+				}
+				
+				jQuery('.upload_image_button').live('click', function(){
+					var post_id = 0;
+					
+					window.send_to_editor = window.send_to_termmeta;
+					
+					tb_show('', 'media-upload.php?post_id=' + post_id + '&amp;type=image&amp;TB_iframe=true');
+					return false;
+				});
+				
+				jQuery('.remove_image_button').live('click', function(){
+					jQuery('#product_cat_thumbnail img').attr('src', '<?php echo $woocommerce->plugin_url().'/assets/images/placeholder.png'; ?>');
+					jQuery('#product_cat_thumbnail_id').val('');
+					return false;
+				});
+				
+			</script>
+			<div class="clear"></div>
+		</td>
+	</tr>
+	<?php
+}
+
+add_action('created_term', 'woocommerce_category_thumbnail_field_save', 10,3);
+add_action('edit_term', 'woocommerce_category_thumbnail_field_save', 10,3);
+
+function woocommerce_category_thumbnail_field_save( $term_id, $tt_id, $taxonomy ) {
+	if (isset($_POST['product_cat_thumbnail_id'])) {
+		update_woocommerce_term_meta($term_id, 'thumbnail_id', $_POST['product_cat_thumbnail_id']);
+    }
+}
+
+
 /**
  * Categories ordering
  */
-
-/**
- * Add product_cat ordering to get_terms
- * 
- * It enables the support a 'menu_order' parameter to get_terms for the product_cat taxonomy.
- * By default it is 'ASC'. It accepts 'DESC' too
- * 
- * To disable it, set it ot false (or 0)
- * 
- */
-add_filter( 'terms_clauses', 'woocommerce_terms_clauses', 10, 3);
-
-function woocommerce_terms_clauses($clauses, $taxonomies, $args ) {
-	global $wpdb;
-	
-	// wordpress should give us the taxonomies asked when calling the get_terms function
-	if( !in_array('product_cat', (array)$taxonomies) ) return $clauses;
-	
-	// query order
-	if( isset($args['menu_order']) && !$args['menu_order']) return $clauses; // menu_order is false so we do not add order clause
-	
-	// query fields
-	if( strpos('COUNT(*)', $clauses['fields']) === false ) $clauses['fields']  .= ', tm.* ';
-
-	//query join
-	$clauses['join'] .= " LEFT JOIN {$wpdb->woocommerce_termmeta} AS tm ON (t.term_id = tm.woocommerce_term_id AND tm.meta_key = 'order') ";
-	
-	// default to ASC
-	if( ! isset($args['menu_order']) || ! in_array( strtoupper($args['menu_order']), array('ASC', 'DESC')) ) $args['menu_order'] = 'ASC';
-
-	$order = "ORDER BY CAST(tm.meta_value AS SIGNED) " . $args['menu_order'];
-	
-	if ( $clauses['orderby'] ):
-		$clauses['orderby'] = str_replace ('ORDER BY', $order . ',', $clauses['orderby'] );
-	else:
-		$clauses['orderby'] = $order;
-	endif;
-	
-	return $clauses;
-}
-
 
 /**
  * Reorder on category insertion

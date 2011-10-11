@@ -125,7 +125,21 @@ function woocommerce_product_data_box() {
 					echo '<input type="hidden" name="weight" value="'.get_post_meta($thepostid, 'weight', true).'" />';
 				endif;
 				
-				do_action('woocommerce_product_options_weight');
+				// Size fields
+				if( get_option('woocommerce_enable_dimensions', true) !== 'no' ) :
+					?><p class="form-field dimensions_field">
+						<label for"product_length"><?php echo __('Dimensions', 'woothemes') . ' ('.get_option('woocommerce_dimension_unit').')'; ?></label>
+						<input id="product_length" placeholder="<?php _e('Length', 'woothemes'); ?>" class="input-text sized" size="6" type="text" name="length" value="<?php echo get_post_meta( $thepostid, 'length', true ); ?>" />
+						<input placeholder="<?php _e('Width', 'woothemes'); ?>" class="input-text sized" size="6" type="text" name="width" value="<?php echo get_post_meta( $thepostid, 'width', true ); ?>" />
+						<input placeholder="<?php _e('Height', 'woothemes'); ?>" class="input-text sized" size="6" type="text" name="height" value="<?php echo get_post_meta( $thepostid, 'height', true ); ?>" />
+					</p><?php
+				else:
+					echo '<input type="hidden" name="length" value="'.get_post_meta($thepostid, 'length', true).'" />';
+					echo '<input type="hidden" name="width" value="'.get_post_meta($thepostid, 'width', true).'" />';
+					echo '<input type="hidden" name="height" value="'.get_post_meta($thepostid, 'height', true).'" />';
+				endif;
+				
+				do_action('woocommerce_product_options_dimensions');
 			
 			echo '</div>';
 			
@@ -369,6 +383,9 @@ function woocommerce_process_product_meta( $post_id, $post ) {
 	update_post_meta( $post_id, 'regular_price', stripslashes( $_POST['regular_price'] ) );
 	update_post_meta( $post_id, 'sale_price', stripslashes( $_POST['sale_price'] ) );
 	update_post_meta( $post_id, 'weight', stripslashes( $_POST['weight'] ) );
+	update_post_meta( $post_id, 'length', stripslashes( $_POST['length'] ) );
+	update_post_meta( $post_id, 'width', stripslashes( $_POST['width'] ) );
+	update_post_meta( $post_id, 'height', stripslashes( $_POST['height'] ) );
 	update_post_meta( $post_id, 'tax_status', stripslashes( $_POST['tax_status'] ) );
 	update_post_meta( $post_id, 'tax_class', stripslashes( $_POST['tax_class'] ) );
 	update_post_meta( $post_id, 'stock_status', stripslashes( $_POST['stock_status'] ) );
@@ -380,7 +397,10 @@ function woocommerce_process_product_meta( $post_id, $post ) {
 	$new_sku = stripslashes( $_POST['sku'] );
 	if ($new_sku!==$sku) :
 		if ($new_sku && !empty($new_sku)) :
-			if ($wpdb->get_var("SELECT * FROM $wpdb->postmeta WHERE meta_key='sku' AND meta_value='".$new_sku."';") || $wpdb->get_var("SELECT * FROM $wpdb->posts WHERE ID='".$new_sku."' AND ID!=".$post_id.";")) :
+			if (
+				$wpdb->get_var($wpdb->prepare("SELECT * FROM $wpdb->postmeta WHERE meta_key='sku' AND meta_value='%s';", $new_sku)) || 
+				$wpdb->get_var($wpdb->prepare("SELECT * FROM $wpdb->posts WHERE ID='%s' AND ID!='%s' AND post_type='product';", $new_sku, $post_id))
+				) :
 				$woocommerce_errors[] = __('Product SKU must be unique.', 'woothemes');
 			else :
 				update_post_meta( $post_id, 'sku', $new_sku );
@@ -419,21 +439,26 @@ function woocommerce_process_product_meta( $post_id, $post ) {
 			 		$values = explode('|', $values);
 			 		$values = array_map('trim', $values);
 			 	endif;
+			 	
+			 	// Remove empty items in the array
+			 	$values = array_filter( $values );
 		 	
 		 		// Update post terms
 		 		if (taxonomy_exists( $attribute_names[$i] )) :
 		 			wp_set_object_terms( $post_id, $values, $attribute_names[$i] );
 		 		endif;
-		 		
-		 		// Add attribute to array, but don't set values
-		 		$attributes[ sanitize_title( $attribute_names[$i] ) ] = array(
-			 		'name' 			=> htmlspecialchars(stripslashes($attribute_names[$i])), 
-			 		'value' 		=> '',
-			 		'position' 		=> $attribute_position[$i],
-			 		'is_visible' 	=> $is_visible,
-			 		'is_variation' 	=> $is_variation,
-			 		'is_taxonomy' 	=> $is_taxonomy
-			 	);
+
+		 		if ($values) :
+			 		// Add attribute to array, but don't set values
+			 		$attributes[ sanitize_title( $attribute_names[$i] ) ] = array(
+				 		'name' 			=> htmlspecialchars(stripslashes($attribute_names[$i])), 
+				 		'value' 		=> '',
+				 		'position' 		=> $attribute_position[$i],
+				 		'is_visible' 	=> $is_visible,
+				 		'is_variation' 	=> $is_variation,
+				 		'is_taxonomy' 	=> $is_taxonomy
+				 	);
+			 	endif;
 		 	else :
 		 		// Format values
 		 		$values = htmlspecialchars(stripslashes($attribute_values[$i]));

@@ -49,6 +49,9 @@ class woocommerce_order {
 		// Custom fields
 		$this->items 				= (array) get_post_meta( $this->id, '_order_items', true );
 		$this->user_id 				= (int) get_post_meta( $this->id, '_customer_user', true );
+		$this->completed_date		= get_post_meta( $this->id, '_completed_date', true );
+		
+		if (!$this->completed_date) $this->completed_date = $this->modified_date;
 		
 		$order_custom_fields = get_post_custom( $this->id );
 		
@@ -257,7 +260,7 @@ class woocommerce_order {
 					
 			endif;
 			
-			$return = '<tr>
+			$return .= '<tr>
 				<td style="text-align:left;">' . apply_filters('woocommerce_order_product_title', $item['name'], $_product) . $sku . $file . $variation . '</td>
 				<td style="text-align:left;">'.$item['qty'].'</td>
 				<td style="text-align:left;">'.strip_tags(woocommerce_price( $item['cost']*$item['qty'], array('ex_tax_label' => 1 ))).'</td>
@@ -355,6 +358,9 @@ class woocommerce_order {
 				do_action( 'woocommerce_order_status_'.$this->status.'_to_'.$new_status->slug, $this->id );
 				$this->add_order_note( $note . sprintf( __('Order status changed from %s to %s.', 'woothemes'), $this->status, $new_status->slug ) );
 				clean_term_cache( '', 'shop_order_status' );
+				
+				// Date
+				if ($new_status->slug=='completed') update_post_meta( $this->id, '_completed_date', current_time('mysql') );
 			endif;
 		
 		endif;
@@ -405,10 +411,14 @@ class woocommerce_order {
 		endforeach;
 		
 		if ($downloadable_order) :
-			$this->update_status('completed');
+			$new_order_status = 'completed';
 		else :
-			$this->update_status('processing');
+			$new_order_status = 'processing';
 		endif;
+		
+		$new_order_status = apply_filters('woocommerce_payment_complete_order_status', $new_order_status, $this->id);
+		
+		$this->update_status($new_order_status);
 		
 		// Payment is complete so reduce stock levels
 		$this->reduce_order_stock();

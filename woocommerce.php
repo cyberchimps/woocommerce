@@ -1,9 +1,9 @@
 <?php
 /*
 Plugin Name: WooCommerce
-Plugin URI: http://woocommerce.com
+Plugin URI: http://www.woothemes.com/woocommerce/
 Description: An eCommerce plugin for wordpress.
-Version: 1.0.2
+Version: 1.0.3
 Author: WooThemes
 Author URI: http://woothemes.com
 Requires at least: 3.1
@@ -15,13 +15,13 @@ if (!session_id()) session_start();
 /**
  * Localisation
  **/
-load_plugin_textdomain('woothemes', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/');
+load_plugin_textdomain('woothemes', false, dirname( plugin_basename( __FILE__ ) ) . '/languages');
 
 /**
  * Constants
- **/
+ **/ 
 if (!defined('WOOCOMMERCE_TEMPLATE_URL')) define('WOOCOMMERCE_TEMPLATE_URL', 'woocommerce/');
-if (!defined("WOOCOMMERCE_VERSION")) define("WOOCOMMERCE_VERSION", "1.0.2");	
+if (!defined("WOOCOMMERCE_VERSION")) define("WOOCOMMERCE_VERSION", "1.0.3");	
 if (!defined("PHP_EOL")) define("PHP_EOL", "\r\n");
 
 /**
@@ -100,19 +100,21 @@ function woocommerce_init() {
 	woocommerce_post_type();
 
 	// Image sizes
-	add_image_size( 'shop_thumbnail', $woocommerce->get_image_size('shop_thumbnail_image_width'), $woocommerce->get_image_size('shop_thumbnail_image_height'), 'true' );
-	add_image_size( 'shop_catalog', $woocommerce->get_image_size('shop_catalog_image_width'), $woocommerce->get_image_size('shop_catalog_image_height'), 'true' );
-	add_image_size( 'shop_single', $woocommerce->get_image_size('shop_single_image_width'), $woocommerce->get_image_size('shop_single_image_height'), 'true' );
+	$shop_thumbnail_crop 	= (get_option('shop_thumbnail_image_crop')==1) ? true : false;
+	$shop_catalog_crop 		= (get_option('shop_catalog_image_crop')==1) ? true : false;
+	$shop_single_crop 		= (get_option('shop_single_image_crop')==1) ? true : false;
+
+	add_image_size( 'shop_thumbnail', $woocommerce->get_image_size('shop_thumbnail_image_width'), $woocommerce->get_image_size('shop_thumbnail_image_height'), $shop_thumbnail_crop );
+	add_image_size( 'shop_catalog', $woocommerce->get_image_size('shop_catalog_image_width'), $woocommerce->get_image_size('shop_catalog_image_height'), $shop_catalog_crop );
+	add_image_size( 'shop_single', $woocommerce->get_image_size('shop_single_image_width'), $woocommerce->get_image_size('shop_single_image_height'), $shop_single_crop );
 
 	// Include template functions here so they are pluggable by themes
 	include_once( 'woocommerce_template_functions.php' );
 	
 	$suffix = defined('SCRIPT_DEBUG') && SCRIPT_DEBUG ? '' : '.min';
 	
-    if (is_admin()) :
-    	wp_enqueue_style( 'woocommerce_admin_styles', $woocommerce->plugin_url() . '/assets/css/admin.css' );
-    	wp_enqueue_style( 'jquery-ui-style', 'http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.2/themes/smoothness/jquery-ui.css' );
-    else :
+    if (!is_admin()) :
+
     	// Optional front end css	
 		if ((defined('WOOCOMMERCE_USE_CSS') && WOOCOMMERCE_USE_CSS) || (!defined('WOOCOMMERCE_USE_CSS') && get_option('woocommerce_frontend_css')=='yes')) :
 			$css = file_exists(get_stylesheet_directory() . '/woocommerce/style.css') ? get_stylesheet_directory_uri() . '/woocommerce/style.css' : $woocommerce->plugin_url() . '/assets/css/woocommerce.css';
@@ -234,31 +236,45 @@ function is_woocommerce() {
 	// Returns true if on a page which uses WooCommerce templates (cart and checkout are standard pages with shortcodes and thus are not included)
 	if (is_shop() || is_product_category() || is_product_tag() || is_product()) return true; else return false;
 }
-function is_shop() {
-	if (is_post_type_archive( 'product' ) || is_page(get_option('woocommerce_shop_page_id'))) return true; else return false;
+if (!function_exists('is_shop')) {
+	function is_shop() {
+		if (is_post_type_archive( 'product' ) || is_page(get_option('woocommerce_shop_page_id'))) return true; else return false;
+	}
 }
-function is_product_category() {
-	return is_tax( 'product_cat' );
+if (!function_exists('is_product_category')) {
+	function is_product_category() {
+		return is_tax( 'product_cat' );
+	}
 }
-function is_product_tag() {
-	return is_tax( 'product_tag' );
+if (!function_exists('is_product_tag')) {
+	function is_product_tag() {
+		return is_tax( 'product_tag' );
+	}
 }
-function is_product() {
-	return is_singular( array('product') );
+if (!function_exists('is_product')) {
+	function is_product() {
+		return is_singular( array('product') );
+	}
 }
-function is_cart() {
-	return is_page(get_option('woocommerce_cart_page_id'));
+if (!function_exists('is_cart')) {
+	function is_cart() {
+		return is_page(get_option('woocommerce_cart_page_id'));
+	}
 }
-function is_checkout() {
-	return is_page(get_option('woocommerce_checkout_page_id'));
+if (!function_exists('is_checkout')) {
+	function is_checkout() {
+		return is_page(get_option('woocommerce_checkout_page_id'));
+	}
 }
-function is_account_page() {
-	if ( is_page(get_option('woocommerce_myaccount_page_id')) || is_page(get_option('woocommerce_edit_address_page_id')) || is_page(get_option('woocommerce_view_order_page_id')) || is_page(get_option('woocommerce_change_password_page_id')) ) return true; else return false;
-	return is_page(get_option('woocommerce_myaccount_page_id'));
-}
-if (!function_exists('is_ajax')) {
-	function is_ajax() {
-		if ( isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest' ) return true; else return false;
+if (!function_exists('is_account_page')) {
+	function is_account_page() {
+		if ( is_page(get_option('woocommerce_myaccount_page_id')) || is_page(get_option('woocommerce_edit_address_page_id')) || is_page(get_option('woocommerce_view_order_page_id')) || is_page(get_option('woocommerce_change_password_page_id')) ) return true; else return false;
+		return is_page(get_option('woocommerce_myaccount_page_id'));
+	}
+	if (!function_exists('is_ajax')) {
+		function is_ajax() {
+			if ( isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest' ) return true; else return false;
+		}
 	}
 }
 
@@ -530,27 +546,27 @@ if (!is_admin()) add_filter('comments_clauses', 'woocommerce_exclude_order_comme
 if ( ! function_exists('readfile_chunked')) {
     function readfile_chunked($file, $retbytes=TRUE) {
     
-       $chunksize = 1 * (1024 * 1024);
-       $buffer = '';
-       $cnt = 0;
-
-       $handle = fopen($file, 'r');
-       if ($handle === FALSE) return FALSE;
-
-       while (!feof($handle)) :
-           $buffer = fread($handle, $chunksize);
-           echo $buffer;
-           ob_flush();
-           flush();
-
-           if ($retbytes) $cnt += strlen($buffer);
-       endwhile;
-
-       $status = fclose($handle);
-
-       if ($retbytes AND $status) return $cnt;
-
-       return $status;
+		$chunksize = 1 * (1024 * 1024);
+		$buffer = '';
+		$cnt = 0;
+		
+		$handle = fopen($file, 'r');
+		if ($handle === FALSE) return FALSE;
+				
+		while (!feof($handle)) :
+		   $buffer = fread($handle, $chunksize);
+		   echo $buffer;
+		   ob_flush();
+		   flush();
+		
+		   if ($retbytes) $cnt += strlen($buffer);
+		endwhile;
+		
+		$status = fclose($handle);
+		
+		if ($retbytes AND $status) return $cnt;
+		
+		return $status;
     }
 }
 

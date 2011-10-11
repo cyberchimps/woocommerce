@@ -343,25 +343,15 @@ class woocommerce_cart {
 					
 					if ( $_product->is_taxable() ) :
 					
-						$rate = $_tax->get_rate( $_product->tax_class );
+						$rate = $_tax->get_rate( $_product->get_tax_class() );
 						
-						if (get_option('woocommerce_prices_include_tax')=='yes') :
+						$tax_amount = $_tax->calc_tax( $_product->get_price(), $rate, true ) * $values['quantity'];
 						
-							$tax_amount = $_tax->calc_tax( $_product->get_price(), $rate, true ) * $values['quantity'];
-							
-						else :
-						
-							$tax_amount = $_tax->calc_tax( $_product->get_price(), $rate, false ) * $values['quantity'];
-							
-						endif;
-						
+						/**
+						 * Checkout calculations when customer is OUTSIDE the shop base country and price INCLUDE tax
+						 */
 						if (get_option('woocommerce_prices_include_tax')=='yes' && $woocommerce->customer->is_customer_outside_base() && defined('WOOCOMMERCE_CHECKOUT') && WOOCOMMERCE_CHECKOUT ) :
-							
-							/**
-							 * Our prices include tax so we need to take the base tax rate into consideration of our shop's country
-							 *
-							 * Lets get the base rate first
-							 */
+							// Get the base rate first
 							$base_rate = $_tax->get_shop_base_rate( $_product->tax_class );
 							
 							// Calc tax for base country
@@ -373,6 +363,20 @@ class woocommerce_cart {
 							
 							// Finally, update $total_item_price to reflect tax amounts
 							$total_item_price = ($total_item_price - ($base_tax_amount * $values['quantity']) + $tax_amount);
+							
+						/**
+						 * Checkout calculations when customer is INSIDE the shop base country and price INCLUDE tax
+						 */
+						elseif (get_option('woocommerce_prices_include_tax')=='yes' && $_product->get_tax_class() !== $_product->tax_class) :
+							
+							// Calc tax for original rate
+							$original_tax_amount = $_tax->calc_tax( $_product->get_price(), $_tax->get_rate( $_product->tax_class ), true);
+							
+							// Now calc tax for new rate (which now excludes tax)
+							$tax_amount = $_tax->calc_tax( ( $_product->get_price() - $original_tax_amount ), $rate, false );
+							$tax_amount = $tax_amount * $values['quantity'];
+							
+							$total_item_price = ($total_item_price - ($original_tax_amount * $values['quantity']) + $tax_amount);
 							
 						endif;
 
@@ -430,6 +434,9 @@ class woocommerce_cart {
 			$this->shipping_tax_total = 0;
 			$this->tax_total = 0;
 		endif;
+		
+		// Allow plugins to hook and alter totals before final total is calculated
+		do_action('woocommerce_calculate_totals', $this);
 				
 		// Total
 		if (get_option('woocommerce_prices_include_tax')=='yes') :
@@ -565,13 +572,13 @@ class woocommerce_cart {
 			endif;
 			
 			// If its individual use then remove other coupons
-			if ($the_coupon->individual_use==1) :
+			if ($the_coupon->individual_use=='yes') :
 				$this->applied_coupons = array();
 			endif;
 			
 			foreach ($this->applied_coupons as $code) :
 				$coupon = &new woocommerce_coupon($code);
-				if ($coupon->individual_use==1) :
+				if ($coupon->individual_use=='yes') :
 					$this->applied_coupons = array();
 				endif;
 			endforeach;
