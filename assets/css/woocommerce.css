@@ -34,7 +34,7 @@ form.cart .variations label{font-weight:bold;}
 form.cart .variations select{width:100%;float:left;}
 form.cart .button{vertical-align:middle;float:left;margin:2px 0;}
 span.onsale{background:#056b9e;color:#fff;min-height:32px;min-width:32px;padding:4px;font-size:12px;position:absolute;text-align:center;line-height:32px;top:6px;left:6px;margin:0;-webkit-border-radius:20px;-moz-border-radius:20px;border-radius:20px;}
-.products ul,ul.products{margin:0 0 14px;padding:0;list-style:none;}
+.products ul,ul.products{margin:0 0 14px;padding:0;list-style:none;padding-top: 15px;}
 .related,.upsells.products{overflow:hidden;zoom:1;}.related ul.products,.upsells.products ul.products,.related ul,.upsells.products ul{float:none;}.related ul.products li,.upsells.products ul.products li,.related ul li,.upsells.products ul li{width:48%;}.related ul.products li img,.upsells.products ul.products li img,.related ul li img,.upsells.products ul li img{width:100%;height:auto;}
 ul.products{clear:both;margin-left:0;padding-left:0;}ul.products li{float:left;margin:0 3.8% 20px 0;padding:0;position:relative;width:22.05%;margin-left:0;}ul.products li .onsale{top:0;right:0;left:auto;margin:-6px -6px 0 0;}
 ul.products li a{text-decoration:none;}
