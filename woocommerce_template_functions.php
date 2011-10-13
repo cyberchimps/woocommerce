@@ -63,19 +63,22 @@ if (!function_exists('woocommerce_template_loop_add_to_cart')) {
 			return;
 		endif;
 		
-		?><a href="<?php echo esc_url( $_product->add_to_cart_url() ); ?>" rel="<?php echo $_product->id; ?>" class="button add_to_cart_button product_type_<?php echo $_product->product_type; ?>"><?php
-			switch ($_product->product_type) :
-				case "variable" :
-					echo apply_filters('variable_add_to_cart_text', __('Select options', 'woothemes'));
-				break;
-				case "grouped" :
-					echo apply_filters('grouped_add_to_cart_text', __('View options', 'woothemes'));
-				break;
-				default :
-					echo apply_filters('add_to_cart_text', __('Add to cart', 'woothemes'));
-				break;
-			endswitch;
-		?></a><?php
+		switch ($_product->product_type) :
+			case "variable" :
+				$link 	= get_permalink($post->ID);
+				$label 	= apply_filters('variable_add_to_cart_text', __('Select options', 'woothemes'));
+			break;
+			case "grouped" :
+				$link 	= get_permalink($post->ID);
+				$label 	= apply_filters('grouped_add_to_cart_text', __('View options', 'woothemes'));
+			break;
+			default :
+				$link 	= esc_url( $_product->add_to_cart_url() );
+				$label 	= apply_filters('add_to_cart_text', __('Add to cart', 'woothemes'));
+			break;
+		endswitch;
+			
+		echo sprintf('<a href="%s" rel="%s" class="button add_to_cart_button product_type_%s">%s</a>', $link, $_product->id, $_product->product_type, $label);
 	}
 }
 if (!function_exists('woocommerce_template_loop_product_thumbnail')) {
@@ -392,22 +395,28 @@ if (!function_exists('woocommerce_variable_add_to_cart')) {
 		<form action="<?php echo esc_url( $_product->add_to_cart_url() ); ?>" class="variations_form cart" method="post">
 			<table class="variations" cellspacing="0">
 				<tbody>
-				<?php foreach ($attributes as $name => $options) :?>
+				<?php foreach ($attributes as $name => $options) : ?>
 					<tr>
 						<td><label for="<?php echo sanitize_title($name); ?>"><?php echo $woocommerce->attribute_label($name); ?></label></td>
 						<td><select id="<?php echo esc_attr( sanitize_title($name) ); ?>" name="attribute_<?php echo sanitize_title($name); ?>">
 							<option value=""><?php echo __('Choose an option', 'woothemes') ?>&hellip;</option>
 							<?php if(is_array($options)) : ?>
-								<?php foreach ($options as $option) : 
-									$option_term = get_term_by('slug', $option, $name); 
-									if (!is_wp_error($option_term) && isset($option_term->name)) :
-										$term_name = $option_term->name;
+								<?php
+									// Get terms if this is a taxonomy - ordered
+									if (taxonomy_exists(sanitize_title($name))) :
+										$args = array('menu_order' => 'ASC');
+										$terms = get_terms( sanitize_title($name), $args );
+	
+										foreach ($terms as $term) : 
+											if (!in_array($term->slug, $options)) continue;
+											echo '<option value="'.$term->slug.'">'.$term->name.'</option>';
+										endforeach; 
 									else :
-										$term_name = $option;
+										foreach ($options as $option) : 
+											echo '<option value="'.$option.'">'.$option.'</option>';
+										endforeach;
 									endif;
-									?>
-									<?php echo '<option value="'.$option.'">'.$term_name.'</option>'; ?>
-								<?php endforeach; ?>
+								?>
 							<?php endif;?>
 						</td>
 					</tr>
@@ -775,7 +784,7 @@ if (!function_exists('woocommerce_login_form')) {
 			<p class="form-row">
 				<?php $woocommerce->nonce_field('login', 'login') ?>
 				<input type="submit" class="button" name="login" value="<?php _e('Login', 'woothemes'); ?>" />
-				<a class="lost_password" href="<?php echo esc_url( home_url('wp-login.php?action=lostpassword') ); ?>"><?php _e('Lost Password?', 'woothemes'); ?></a>
+				<a class="lost_password" href="<?php echo esc_url( wp_lostpassword_url( home_url() ) ); ?>"><?php _e('Lost Password?', 'woothemes'); ?></a>
 			</p>
 		</form>
 		<?php
