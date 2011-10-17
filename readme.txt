@@ -3,7 +3,7 @@ Contributors: woothemes
 Tags: ecommerce, e-commerce, commerce, woothemes, wordpress ecommerce, store, shop, shopping, cart, checkout, widgets, reports, shipping, tax, paypal, inventory
 Requires at least: 3.1
 Tested up to: 3.3
-Stable tag: 1.1
+Stable tag: 1.1.1
 
 An e-commerce toolkit that helps you sell anything. Beautifully.
 
@@ -32,7 +32,7 @@ Checkout and contribute to the source on GitHub at http://github.com/woothemes/w
 
 = Minimum Requirements =
 
-* WordPress 3.1+
+* WordPress 3.1 or greater
 * PHP version 5.2.4 or greater
 * MySQL version 5.0 or greater
 * Some payment gateways require fsockopen support (for IPN access)
@@ -57,9 +57,14 @@ For further documentation on using WooCommerce, please sign up for free at http:
 
 == Changelog ==
 
-= 1.1.1 - xxx =
+= 1.1.1 - 16/10/2011 =
 * Products need a base, regardless of category settings - added base to prevent pages breaking
 * Fixed hard cropping
+* Translation fixes
+* Moved discount above shipping calc
+* Fixed enter key on product edit page
+* Typos
+* Made custom attributes display 'nicely' in cart widgets, instead of santized
 
 = 1.1 - 12/10/2011 =
 * Tested and working with WordPress 3.3 beta-1
