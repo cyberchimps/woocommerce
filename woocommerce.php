@@ -3,7 +3,7 @@
 Plugin Name: WooCommerce
 Plugin URI: http://www.woothemes.com/woocommerce/
 Description: An eCommerce plugin for wordpress.
-Version: 1.1.2
+Version: 1.2
 Author: WooThemes
 Author URI: http://woothemes.com
 Requires at least: 3.1
@@ -16,12 +16,13 @@ if (!session_id()) session_start();
  * Localisation
  **/
 load_plugin_textdomain('woothemes', false, dirname( plugin_basename( __FILE__ ) ) . '/languages');
+load_plugin_textdomain('woothemes', false, dirname( plugin_basename( __FILE__ ) ) . '/../../languages/woocommerce');
 
 /**
  * Constants
  **/ 
 if (!defined('WOOCOMMERCE_TEMPLATE_URL')) define('WOOCOMMERCE_TEMPLATE_URL', 'woocommerce/');
-if (!defined("WOOCOMMERCE_VERSION")) define("WOOCOMMERCE_VERSION", "1.1.2");	
+if (!defined("WOOCOMMERCE_VERSION")) define("WOOCOMMERCE_VERSION", "1.2");	
 if (!defined("PHP_EOL")) define("PHP_EOL", "\r\n");
 
 /**
@@ -35,7 +36,7 @@ if (is_admin()) :
 	 **/
 	register_activation_hook( __FILE__, 'activate_woocommerce' );
 	
-	if (get_site_option('woocommerce_db_version') != WOOCOMMERCE_VERSION) add_action('init', 'install_woocommerce', 0);
+	if (get_option('woocommerce_db_version') != WOOCOMMERCE_VERSION) add_action('init', 'install_woocommerce', 0);
 	
 endif;
 
@@ -155,22 +156,46 @@ function woocommerce_init_roles() {
 		
 		// Customer role
 		add_role('customer', __('Customer', 'woothemes'), array(
-		    'read' => true,
-		    'edit_posts' => false,
-		    'delete_posts' => false
+		    'read' 						=> true,
+		    'edit_posts' 				=> false,
+		    'delete_posts' 				=> false
 		));
 	
 		// Shop manager role
 		add_role('shop_manager', __('Shop Manager', 'woothemes'), array(
-		    'read' 			=> true,
-		    'edit_posts' 	=> true,
-		    'delete_posts' 	=> true,
+		    'read' 						=> true,
+		    'read_private_pages'		=> true,
+		    'read_private_posts'		=> true,
+		    'edit_posts' 				=> true,
+		    'edit_pages' 				=> true,
+		    'edit_published_posts'		=> true,
+		    'edit_published_pages'		=> true,
+		    'edit_private_pages'		=> true,
+		    'edit_private_posts'		=> true,
+		    'edit_others_posts' 		=> true,
+		    'edit_others_pages' 		=> true,
+		    'publish_posts' 			=> true,
+		    'publish_pages'				=> true,
+		    'delete_posts' 				=> true,
+		    'delete_pages' 				=> true,
+		    'delete_private_pages'		=> true,
+		    'delete_private_posts'		=> true,
+		    'delete_published_pages'	=> true,
+		    'delete_published_posts'	=> true,
+		    'delete_others_posts' 		=> true,
+		    'delete_others_pages' 		=> true,
+		    'manage_categories' 		=> true,
+		    'manage_links'				=> true,
+		    'moderate_comments'			=> true,
+		    'unfiltered_html'			=> true,
+		    'upload_files'				=> true,
+		   	'export'					=> true,
+			'import'					=> true,
+			'manage_woocommerce'		=> true
 		));
-
-		// Main Shop capabilities
-		$wp_roles->add_cap( 'administrator', 'manage_woocommerce' );
-		$wp_roles->add_cap( 'shop_manager', 'manage_woocommerce' );
 		
+		// Main Shop capabilities for admin
+		$wp_roles->add_cap( 'administrator', 'manage_woocommerce' );
 	endif;
 }
 
@@ -212,10 +237,16 @@ function woocommerce_frontend_scripts() {
 	if (isset($_SESSION['min_price'])) $woocommerce_params['min_price'] = $_SESSION['min_price'];
 	if (isset($_SESSION['max_price'])) $woocommerce_params['max_price'] = $_SESSION['max_price'];
 		
-	if ( is_page(get_option('woocommerce_checkout_page_id')) || is_page(get_option('woocommerce_pay_page_id')) ) :
+	if ( is_page(get_option('woocommerce_checkout_page_id')) ) :
 		$woocommerce_params['is_checkout'] = 1;
 	else :
 		$woocommerce_params['is_checkout'] = 0;
+	endif;
+	
+	if (is_page(get_option('woocommerce_pay_page_id'))) :
+		$woocommerce_params['is_pay_page'] = 1;
+	else :
+		$woocommerce_params['is_pay_page'] = 0;
 	endif;
 	
 	if ( is_cart() ) :
@@ -263,7 +294,7 @@ if (!function_exists('is_cart')) {
 }
 if (!function_exists('is_checkout')) {
 	function is_checkout() {
-		return is_page(get_option('woocommerce_checkout_page_id'));
+		if (is_page(get_option('woocommerce_checkout_page_id')) || is_page(get_option('woocommerce_pay_page_id'))) return true; else return false;
 	}
 }
 if (!function_exists('is_account_page')) {
@@ -271,10 +302,10 @@ if (!function_exists('is_account_page')) {
 		if ( is_page(get_option('woocommerce_myaccount_page_id')) || is_page(get_option('woocommerce_edit_address_page_id')) || is_page(get_option('woocommerce_view_order_page_id')) || is_page(get_option('woocommerce_change_password_page_id')) ) return true; else return false;
 		return is_page(get_option('woocommerce_myaccount_page_id'));
 	}
-	if (!function_exists('is_ajax')) {
-		function is_ajax() {
-			if ( isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest' ) return true; else return false;
-		}
+}
+if (!function_exists('is_ajax')) {
+	function is_ajax() {
+		if ( isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest' ) return true; else return false;
 	}
 }
 
@@ -285,8 +316,12 @@ if (get_option('woocommerce_force_ssl_checkout')=='yes') add_action( 'wp', 'wooc
 
 function woocommerce_force_ssl() {
 	if (is_checkout() && !is_ssl()) :
-		wp_redirect( str_replace('http:', 'https:', get_permalink(get_option('woocommerce_checkout_page_id'))), 301 );
+		wp_safe_redirect( str_replace('http:', 'https:', get_permalink(get_option('woocommerce_checkout_page_id'))), 301 );
 		exit;
+	/*// Break out of SSL if we leave the checkout
+	elseif (is_ssl() && $_SERVER['REQUEST_URI'] && !is_checkout() && (is_cart() || is_single() || is_archive() || is_product() || is_shop() || is_home() || is_front_page() || is_tax() || is_404() || is_account_page())) :
+		wp_safe_redirect( str_replace('https:', 'http:', home_url($_SERVER['REQUEST_URI']) ) );
+		exit;*/
 	endif;
 }
 
@@ -309,6 +344,26 @@ function woocommerce_force_ssl_images( $content ) {
 	endif;
 	return $content;
 }
+
+/**
+ * Force SSL for stylsheet/script urls etc. Modified code by Chris Black (http://cjbonline.org)
+ **/
+add_filter('option_siteurl', 'woocommerce_force_ssl_urls');
+add_filter('option_home', 'woocommerce_force_ssl_urls');
+add_filter('option_url', 'woocommerce_force_ssl_urls');
+add_filter('option_wpurl', 'woocommerce_force_ssl_urls');
+add_filter('option_stylesheet_url', 'woocommerce_force_ssl_urls');
+add_filter('option_template_url', 'woocommerce_force_ssl_urls');
+add_filter('script_loader_src', 'woocommerce_force_ssl_urls');
+add_filter('style_loader_src', 'woocommerce_force_ssl_urls');
+
+function woocommerce_force_ssl_urls( $url ) {
+	if (is_ssl()) :
+		$url = str_replace('http:', 'https:', $url);
+	endif;
+	return $url;
+}
+
 
 /**
  * IIS compatability fix/fallback
@@ -370,6 +425,7 @@ function get_woocommerce_currency_symbol() {
  * Price Formatting
  **/
 function woocommerce_price( $price, $args = array() ) {
+	global $woocommerce;
 	
 	extract(shortcode_atts(array(
 		'ex_tax_label' 	=> '0'
@@ -396,7 +452,7 @@ function woocommerce_price( $price, $args = array() ) {
 		break;
 	endswitch;
 	
-	if ($ex_tax_label && get_option('woocommerce_calc_taxes')=='yes') $return .= __(' <small>(ex. tax)</small>', 'woothemes');
+	if ($ex_tax_label && get_option('woocommerce_calc_taxes')=='yes') $return .= ' <small>'.$woocommerce->countries->ex_tax_or_vat().'</small>';
 	
 	return $return;
 }
@@ -424,10 +480,20 @@ function woocommerce_get_formatted_variation( $variation = '', $flat = false ) {
 			
 			if (!$value) continue;
 			
+			// If this is a term slug, get the term's nice name
+            if (taxonomy_exists(esc_attr(str_replace('attribute_', '', $name)))) :
+            	$term = get_term_by('slug', $value, esc_attr(str_replace('attribute_', '', $name)));
+            	if (!is_wp_error($term) && $term->name) :
+            		$value = $term->name;
+            	endif;
+            else :
+            	$value = ucfirst($value);
+            endif;
+			
 			if ($flat) :
-				$variation_list[] = $woocommerce->attribute_label(str_replace('attribute_', '', $name)).': '.ucfirst($value);
+				$variation_list[] = $woocommerce->attribute_label(str_replace('attribute_', '', $name)).': '.$value;
 			else :
-				$variation_list[] = '<dt>'.$woocommerce->attribute_label(str_replace('attribute_', '', $name)).':</dt><dd>'.ucfirst($value).'</dd>';
+				$variation_list[] = '<dt>'.$woocommerce->attribute_label(str_replace('attribute_', '', $name)).':</dt><dd>'.$value.'</dd>';
 			endif;
 			
 		endforeach;
@@ -459,8 +525,10 @@ function woocommerce_clean( $var ) {
  **/
 function woocommerce_add_comment_rating($comment_id) {
 	if ( isset($_POST['rating']) ) :
+		global $post;
 		if (!$_POST['rating'] || $_POST['rating'] > 5 || $_POST['rating'] < 0) $_POST['rating'] = 5; 
-		add_comment_meta( $comment_id, 'rating', $_POST['rating'], true );
+		add_comment_meta( $comment_id, 'rating', esc_attr($_POST['rating']), true );
+		delete_transient( esc_attr($post->ID) . '_woocommerce_average_rating' );
 	endif;
 }
 add_action( 'comment_post', 'woocommerce_add_comment_rating', 1 );
@@ -570,3 +638,73 @@ if ( ! function_exists('readfile_chunked')) {
     }
 }
 
+<<<<<<< HEAD
+=======
+/**
+ * Cache
+ **/
+function woocommerce_prevent_sidebar_cache() {
+	echo '<!--mfunc get_sidebar() --><!--/mfunc-->';
+}
+add_action('get_sidebar', 'woocommerce_prevent_sidebar_cache');
+
+/**
+ * Hex darker/lighter/contrast functions for colours
+ **/
+if (!function_exists('woocommerce_hex_darker')) {
+	function woocommerce_hex_darker( $color, $factor = 30 ) {
+		$color = str_replace('#', '', $color);
+		
+		$base['R'] = hexdec($color{0}.$color{1});
+		$base['G'] = hexdec($color{2}.$color{3});
+		$base['B'] = hexdec($color{4}.$color{5});
+		
+		$color = '#';
+		
+		foreach ($base as $k => $v) :
+	        $amount = $v / 100;
+	        $amount = round($amount * $factor);
+	        $new_decimal = $v - $amount;
+	
+	        $new_hex_component = dechex($new_decimal);
+	        if(strlen($new_hex_component) < 2) :
+	        	$new_hex_component = "0".$new_hex_component;
+	        endif;
+	        $color .= $new_hex_component;
+		endforeach;
+		        
+		return $color;        
+	}
+}
+if (!function_exists('woocommerce_hex_lighter')) {
+	function woocommerce_hex_lighter( $color, $factor = 30 ) {
+		$color = str_replace('#', '', $color);
+		
+		$base['R'] = hexdec($color{0}.$color{1});
+		$base['G'] = hexdec($color{2}.$color{3});
+		$base['B'] = hexdec($color{4}.$color{5});
+		
+		$color = '#';
+	     
+	    foreach ($base as $k => $v) :
+	        $amount = 255 - $v; 
+	        $amount = $amount / 100; 
+	        $amount = round($amount * $factor); 
+	        $new_decimal = $v + $amount; 
+	     
+	        $new_hex_component = dechex($new_decimal); 
+	        if(strlen($new_hex_component) < 2) :
+	        	$new_hex_component = "0".$new_hex_component;
+	        endif;
+	        $color .= $new_hex_component; 
+	   	endforeach;
+	         
+	   	return $color;          
+	}
+}
+if (!function_exists('woocommerce_light_or_dark')) {
+	function woocommerce_light_or_dark( $color, $dark = '#000000', $light = '#FFFFFF' ) {
+	    return (hexdec($color) > 0xffffff/2) ? $dark : $light;
+	}
+}
+>>>>>>> upstream/master

@@ -39,6 +39,8 @@ function woocommerce_post_type() {
 	
 	$product_base = untrailingslashit($product_base);
 	
+	if (current_user_can('manage_woocommerce')) $show_in_menu = 'woocommerce'; else $show_in_menu = true;
+	
 	register_taxonomy( 'product_cat',
         array('product'),
         array(
@@ -103,14 +105,14 @@ function woocommerce_post_type() {
 			            'labels' => array(
 			                    'name' => $label,
 			                    'singular_name' => $label,
-			                    'search_items' =>  __( 'Search ', 'woothemes') . $label,
-			                    'all_items' => __( 'All ', 'woothemes') . $label,
-			                    'parent_item' => __( 'Parent ', 'woothemes') . $label,
-			                    'parent_item_colon' => __( 'Parent ', 'woothemes') . $label . ':',
-			                    'edit_item' => __( 'Edit ', 'woothemes') . $label,
-			                    'update_item' => __( 'Update ', 'woothemes') . $label,
-			                    'add_new_item' => __( 'Add New ', 'woothemes') . $label,
-			                    'new_item_name' => __( 'New ', 'woothemes') . $label
+			                    'search_items' =>  __( 'Search', 'woothemes') . ' ' . $label,
+			                    'all_items' => __( 'All', 'woothemes') . ' ' . $label,
+			                    'parent_item' => __( 'Parent', 'woothemes') . ' ' . $label,
+			                    'parent_item_colon' => __( 'Parent', 'woothemes') . ' ' . $label . ':',
+			                    'edit_item' => __( 'Edit', 'woothemes') . ' ' . $label,
+			                    'update_item' => __( 'Update', 'woothemes') . ' ' . $label,
+			                    'add_new_item' => __( 'Add New', 'woothemes') . ' ' . $label,
+			                    'new_item_name' => __( 'New', 'woothemes') . ' ' . $label
 			            ),
 			            'show_ui' => false,
 			            'query_var' => true,
@@ -219,7 +221,7 @@ function woocommerce_post_type() {
 			'capability_type' => 'post',
 			'publicly_queryable' => false,
 			'exclude_from_search' => true,
-			'show_in_menu' => 'woocommerce',
+			'show_in_menu' => $show_in_menu,
 			'hierarchical' => false,
 			'show_in_nav_menus' => false,
 			'rewrite' => false,
@@ -228,7 +230,7 @@ function woocommerce_post_type() {
 			'has_archive' => false
 		)
 	);
-	
+
     register_taxonomy( 'shop_order_status',
         array('shop_order'),
         array(
@@ -276,7 +278,7 @@ function woocommerce_post_type() {
 			'capability_type' => 'post',
 			'publicly_queryable' => true,
 			'exclude_from_search' => true,
-			'show_in_menu' => 'woocommerce',
+			'show_in_menu' => $show_in_menu,
 			'hierarchical' => false,
 			'rewrite' => false,
 			'query_var' => false,			

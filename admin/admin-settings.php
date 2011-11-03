@@ -146,7 +146,7 @@ $woocommerce_settings['pages'] = apply_filters('woocommerce_page_settings', arra
 		'desc' 		=> __( 'This title to show on the shop base page. Leave blank to use the page title.', 'woothemes' ),
 		'id' 		=> 'woocommerce_shop_page_title',
 		'type' 		=> 'text',
-		'std' 		=> __('All Products', 'woothemes')
+		'std' 		=> 'All Products' // Default value for the page title - changed in settings
 	),
 
 	array(  
@@ -158,6 +158,14 @@ $woocommerce_settings['pages'] = apply_filters('woocommerce_page_settings', arra
 		'std' 		=> '',
 		'type' 		=> 'single_select_page',
 		'args'		=> 'show_option_none=' . __('None', 'woothemes'),
+	),
+	
+	array(  
+		'name' => __( 'Logout link', 'woothemes' ),
+		'desc' 		=> sprintf(__( 'Append a logout link to menus containing "My Account"', 'woothemes' ), $base_slug),
+		'id' 		=> 'woocommerce_menu_logout_link',
+		'std' 		=> 'yes',
+		'type' 		=> 'checkbox',
 	),
 	
 	array( 'type' => 'sectionend', 'id' => 'page_options' ),
@@ -276,8 +284,8 @@ $woocommerce_settings['catalog'] = apply_filters('woocommerce_catalog_settings',
 	array(	'name' => __( 'Catalog Options', 'woothemes' ), 'type' => 'title','desc' => '', 'id' => 'catalog_options' ),
 
 	array(  
-		'name' => __( 'Sub-categories', 'woothemes' ),
-		'desc' 		=> __( 'Show sub-categories on category pages', 'woothemes' ),
+		'name' => __( 'Subcategories', 'woothemes' ),
+		'desc' 		=> __( 'Show subcategories on category pages', 'woothemes' ),
 		'id' 		=> 'woocommerce_show_subcategories',
 		'std' 		=> 'no',
 		'type' 		=> 'checkbox',
@@ -285,8 +293,16 @@ $woocommerce_settings['catalog'] = apply_filters('woocommerce_catalog_settings',
 	),
 	
 	array(  
-		'desc' 		=> __( 'Show sub-categories on the shop page', 'woothemes' ),
+		'desc' 		=> __( 'Show subcategories on the shop page', 'woothemes' ),
 		'id' 		=> 'woocommerce_shop_show_subcategories',
+		'std' 		=> 'no',
+		'type' 		=> 'checkbox',
+		'checkboxgroup'		=> ''
+	),
+	
+	array(  
+		'desc' 		=> __( 'When showing subcategories, hide products', 'woothemes' ),
+		'id' 		=> 'woocommerce_hide_products_when_showing_subcategories',
 		'std' 		=> 'no',
 		'type' 		=> 'checkbox',
 		'checkboxgroup'		=> 'end'
@@ -627,6 +643,103 @@ $woocommerce_settings['tax'] = apply_filters('woocommerce_tax_settings', array(
 
 )); // End tax settings
 
+$woocommerce_settings['email'] = apply_filters('woocommerce_email_settings', array(
+	
+	array(	'name' => __( 'Email Recipient Options', 'woothemes' ), 'type' => 'title', '', 'id' => 'email_recipient_options' ),
+	
+	array(  
+		'name' => __( 'New order notifications', 'woothemes' ),
+		'desc' 		=> __( 'The recipient of new order emails. Defaults to the admin email.', 'woothemes' ),
+		'id' 		=> 'woocommerce_new_order_email_recipient',
+		'type' 		=> 'text',
+		'std' 		=> esc_attr(get_option('admin_email'))
+	),
+	
+	array(  
+		'name' => __( 'Inventory notifications', 'woothemes' ),
+		'desc' 		=> __( 'The recipient of stock emails. Defaults to the admin email.', 'woothemes' ),
+		'id' 		=> 'woocommerce_stock_email_recipient',
+		'type' 		=> 'text',
+		'std' 		=> esc_attr(get_option('admin_email'))
+	),
+	
+	array( 'type' => 'sectionend', 'id' => 'email_recipient_options' ),
+	
+	array(	'name' => __( 'Email Sender Options', 'woothemes' ), 'type' => 'title', '', 'id' => 'email_options' ),
+	
+	array(  
+		'name' => __( '"From" name', 'woothemes' ),
+		'desc' 		=> __( 'The sender name for WooCommerce emails.', 'woothemes' ),
+		'id' 		=> 'woocommerce_email_from_name',
+		'type' 		=> 'text',
+		'std' 		=> esc_attr(get_bloginfo('name'))
+	),
+	
+	array(  
+		'name' => __( '"From" email address', 'woothemes' ),
+		'desc' 		=> __( 'The sender email address for WooCommerce emails.', 'woothemes' ),
+		'id' 		=> 'woocommerce_email_from_address',
+		'type' 		=> 'text',
+		'std' 		=> get_option('admin_email')
+	),
+	
+	array( 'type' => 'sectionend', 'id' => 'email_options' ),
+	
+	array(	'name' => __( 'Email template', 'woothemes' ), 'type' => 'title', 'desc' => sprintf(__('This section lets you customise the WooCommerce emails. <a href="%s" target="_blank">Click here to preview your email template</a>. For more advanced control copy <code>woocommerce/templates/emails/</code> to <code>yourtheme/woocommmerce/emails/</code>.', 'woothemes'), wp_nonce_url(admin_url('?preview_woocommerce_mail=true'), 'preview-mail')), 'id' => 'email_template_options' ),
+	
+	array(  
+		'name' => __( 'Header image', 'woothemes' ),
+		'desc' 		=> sprintf(__( 'Enter a URL to an image you want to show in the email\'s header. Upload your image using the <a href="%s">media uploader</a>.', 'woothemes' ), admin_url('media-new.php')),
+		'id' 		=> 'woocommerce_email_header_image',
+		'type' 		=> 'text',
+		'std' 		=> ''
+	),
+	
+	array(  
+		'name' => __( 'Email footer text', 'woothemes' ),
+		'desc' 		=> __( 'The text to appear in the footer of WooCommerce emails.', 'woothemes' ),
+		'id' 		=> 'woocommerce_email_footer_text',
+		'css' 		=> 'width:100%; height: 75px;',
+		'type' 		=> 'textarea',
+		'std' 		=> get_bloginfo('name') . ' - ' . __('Powered by WooCommerce', 'woothemes')
+	),
+	
+	array(  
+		'name' => __( 'Base colour', 'woothemes' ),
+		'desc' 		=> __( 'The base colour for WooCommerce email templates. Default <code>#557da1</code>.', 'woothemes' ),
+		'id' 		=> 'woocommerce_email_base_color',
+		'type' 		=> 'color',
+		'std' 		=> '#557da1'
+	),
+	
+	array(  
+		'name' => __( 'Background colour', 'woothemes' ),
+		'desc' 		=> __( 'The background colour for WooCommerce email templates. Default <code>#eeeeee</code>.', 'woothemes' ),
+		'id' 		=> 'woocommerce_email_background_color',
+		'type' 		=> 'color',
+		'std' 		=> '#eeeeee'
+	),
+	
+	array(  
+		'name' => __( 'Email body background colour', 'woothemes' ),
+		'desc' 		=> __( 'The main body background colour. Default <code>#fdfdfd</code>.', 'woothemes' ),
+		'id' 		=> 'woocommerce_email_body_background_color',
+		'type' 		=> 'color',
+		'std' 		=> '#fdfdfd'
+	),
+	
+	array(  
+		'name' => __( 'Email body text colour', 'woothemes' ),
+		'desc' 		=> __( 'The main body text colour. Default <code>#505050</code>.', 'woothemes' ),
+		'id' 		=> 'woocommerce_email_text_color',
+		'type' 		=> 'color',
+		'std' 		=> '#505050'
+	),
+	
+	array( 'type' => 'sectionend', 'id' => 'email_template_options' ),
+
+)); // End email settings
+
 /**
  * Settings page
  * 
@@ -648,6 +761,7 @@ function woocommerce_settings() {
 			case "inventory" :
 			case "shipping" :
 			case "tax" :
+			case "email" :
 				woocommerce_update_options( $woocommerce_settings[$current_tab] );
 			break;
 		endswitch;
@@ -663,9 +777,58 @@ function woocommerce_settings() {
         flush_rewrite_rules( false );
     endif;
     
-    if (isset($_GET['installed']) && $_GET['installed']) :
-    	echo '<div id="message" class="updated fade"><p style="float:right;">' . __( 'Like WooCommerce? <a href="http://wordpress.org/extend/plugins/woocommerce/">Support us by leaving a rating!</a>', 'woothemes' ) . '</p><p><strong>' . __( 'WooCommerce has been installed. Enjoy :)', 'woothemes' ) . '</strong></p></div>';
+    // Install/page installer
+    $install_complete = false;
+    $show_page_installer = false;
+    
+    // Add pages button
+    if (isset($_GET['install_woocommerce_pages']) && $_GET['install_woocommerce_pages']) :
+	    	
+    	woocommerce_create_pages();
+    	update_option('skip_install_woocommerce_pages', 1);
+    	$install_complete = true;
+	
+	// Skip button
+    elseif (isset($_GET['skip_install_woocommerce_pages']) && $_GET['skip_install_woocommerce_pages']) :
+    	
+    	update_option('skip_install_woocommerce_pages', 1);
+    	$install_complete = true;
+    	
+    // If we have just activated WooCommerce...
+    elseif (isset($_GET['installed']) && $_GET['installed']) :
+    	
     	flush_rewrite_rules( false );
+    	
+		if (get_option('woocommerce_shop_page_id')) :
+			$install_complete = true;
+		else :
+			$show_page_installer = true;
+		endif;
+		
+	// If we havn't just installed, but page installed has not been skipped and shop page does not exist...
+	elseif (!get_option('skip_install_woocommerce_pages') && !get_option('woocommerce_shop_page_id')) :
+		
+		$show_page_installer = true;
+		
+	endif;
+	
+	if ($show_page_installer) :
+    	
+    	echo '<div id="message" class="updated fade">
+    		<p><strong>' . __( 'Welcome to WooCommerce!', 'woothemes' ) . '</strong></p>
+    		<p>'. __('WooCommerce requires several WordPress pages containing shortcodes in order to work correctly; these include Shop, Cart, Checkout and My Account. To add these pages automatically please click the \'Automatically add pages\' button below, otherwise you can set them up manually. See the \'Pages\' tab in settings for more information.', 'woothemes') .'</p>
+    		<p><a href="'.remove_query_arg('installed', add_query_arg('install_woocommerce_pages', 'true')).'" class="button button-primary">'. __('Automatically add pages', 'woothemes') .'</a> <a href="'.remove_query_arg('installed', add_query_arg('skip_install_woocommerce_pages', 'true')).'" class="button">'. __('Skip setup', 'woothemes') .'</a></p>
+    	</div>';
+    	
+    elseif ($install_complete) :
+
+    	echo '<div id="message" class="updated fade">
+    		<p style="float:right;">' . __( 'Like WooCommerce? <a href="http://wordpress.org/extend/plugins/woocommerce/">Support us by leaving a rating!</a>', 'woothemes' ) . '</p>
+    		<p><strong>' . __( 'WooCommerce has been installed and setup. Enjoy :)', 'woothemes' ) . '</strong></p>
+    	</div>';
+    	
+    	flush_rewrite_rules( false );
+    	
     endif;
     ?>
 	<div class="wrap woocommerce">
@@ -680,7 +843,8 @@ function woocommerce_settings() {
 						'shipping' => __( 'Shipping', 'woothemes' ),
 						'tax' => __( 'Tax', 'woothemes'),
 						'shipping_methods' => __( 'Shipping Methods', 'woothemes' ),
-						'payment_gateways' => __( 'Payment Gateways', 'woothemes' )
+						'payment_gateways' => __( 'Payment Gateways', 'woothemes' ),
+						'email' => __( 'Emails', 'woothemes' ),
 					);
 					foreach ($tabs as $name => $label) :
 						echo '<a href="' . admin_url( 'admin.php?page=woocommerce&tab=' . $name ) . '" class="nav-tab ';
@@ -700,6 +864,7 @@ function woocommerce_settings() {
 					case "inventory" :
 					case "shipping" :
 					case "tax" :
+					case "email" :
 						woocommerce_admin_fields( $woocommerce_settings[$current_tab] );
 					break;
 					case "shipping_methods" : 	
@@ -777,6 +942,18 @@ function woocommerce_settings() {
 			jQuery(".country_multiselect").multiselect({
 				noneSelectedText: '<?php _e( 'Select countries/states', 'woothemes' ); ?>',
 				selectedList: 4
+			});
+			
+			// Color picker
+			jQuery('.colorpick').each(function(){
+				jQuery('.colorpickdiv', jQuery(this).parent()).farbtastic(this);
+				jQuery(this).click(function() {
+					if ( jQuery(this).val() == "" ) jQuery(this).val('#');
+					jQuery('.colorpickdiv', jQuery(this).parent() ).show();
+				});	
+			});
+			jQuery(document).mousedown(function(){
+				jQuery('.colorpickdiv').hide();
 			});
 			
 			// Edit prompt

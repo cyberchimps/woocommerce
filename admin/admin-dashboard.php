@@ -126,7 +126,7 @@ function woocommmerce_dashboard_recent_orders() {
 			echo '
 			<li>
 				<span class="order-status '.sanitize_title($this_order->status).'">'.ucwords($this_order->status).'</span> <a href="'.admin_url('post.php?post='.$order->ID).'&action=edit">'.date_i18n('l jS \of F Y h:i:s A', strtotime($this_order->order_date)).'</a><br />
-				<small>'.sizeof($this_order->items).' '._n('item', 'items', sizeof($this_order->items), 'woothemes').' <span class="order-cost">'.__('Total: ', 'woothemes').woocommerce_price($this_order->order_total).'</span></small>
+				<small>'.sizeof($this_order->items).' '._n('item', 'items', sizeof($this_order->items), 'woothemes').' <span class="order-cost">'.__('Total:', 'woothemes') . ' ' . woocommerce_price($this_order->order_total).'</span></small>
 			</li>';
 
 		endforeach;
@@ -182,7 +182,8 @@ function orders_this_month( $where = '' ) {
 	$year = (int) date('Y');
 	
 	$first_day = strtotime("{$year}-{$month}-01");
-	$last_day = strtotime('-1 second', strtotime('+1 month', $first_day));
+	//$last_day = strtotime('-1 second', strtotime('+1 month', $first_day));
+	$last_day = strtotime('+1 month', $first_day);
 	
 	$after = date('Y-m-d', $first_day);
 	$before = date('Y-m-d', $last_day);
@@ -223,7 +224,15 @@ function woocommmerce_dashboard_sales_js() {
 	    'order'           => 'DESC',
 	    'post_type'       => 'shop_order',
 	    'post_status'     => 'publish' ,
-	    'suppress_filters' => false
+	    'suppress_filters' => false,
+	    'tax_query' => array(
+	    	array(
+		    	'taxonomy' => 'shop_order_status',
+				'terms' => array('completed', 'processing', 'on-hold'),
+				'field' => 'slug',
+				'operator' => 'IN'
+			)
+	    )
 	);
 	$orders = get_posts( $args );
 	
@@ -236,7 +245,7 @@ function woocommmerce_dashboard_sales_js() {
 	
 	$first_day = strtotime("{$year}-{$month}-01");
 	$last_day = strtotime('-1 second', strtotime('+1 month', $first_day));
-
+	
 	if ((date('m') - $current_month_offset)==0) :
 		$up_to = date('d', strtotime('NOW'));
 	else :

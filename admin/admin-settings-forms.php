@@ -150,6 +150,12 @@ function woocommerce_admin_fields($options) {
                     <td class="forminp"><input name="<?php echo esc_attr( $value['id'] ); ?>" id="<?php echo esc_attr( $value['id'] ); ?>" type="<?php echo esc_attr( $value['type'] ); ?>" style="<?php echo esc_attr( $value['css'] ); ?>" value="<?php if ( get_option( $value['id'] ) !== false && get_option( $value['id'] ) !== null ) { echo esc_attr( stripslashes( get_option($value['id'] ) ) ); } else { echo esc_attr( $value['std'] ); } ?>" /> <span class="description"><?php echo $value['desc']; ?></span></td>
                 </tr><?php
             break;
+            case 'color' :
+            	?><tr valign="top">
+					<th scope="row" class="titledesc"><?php echo $value['name']; ?></th>
+                    <td class="forminp"><input name="<?php echo esc_attr( $value['id'] ); ?>" id="<?php echo esc_attr( $value['id'] ); ?>" type="text" style="<?php echo esc_attr( $value['css'] ); ?>" value="<?php if ( get_option( $value['id'] ) !== false && get_option( $value['id'] ) !== null ) { echo esc_attr( stripslashes( get_option($value['id'] ) ) ); } else { echo esc_attr( $value['std'] ); } ?>" class="colorpick" /> <span class="description"><?php echo $value['desc']; ?></span> <div id="colorPickerDiv_<?php echo esc_attr( $value['id'] ); ?>" class="colorpickdiv" style="z-index: 100;background:#eee;border:1px solid #ccc;position:absolute;display:none;"></div></td>
+                </tr><?php
+            break;
             case 'image_width' :
             	?><tr valign="top">
 					<th scope="row" class="titledesc"><?php echo $value['name'] ?></th>
@@ -220,6 +226,7 @@ function woocommerce_admin_fields($options) {
             				   'id'		=> $value['id']. '" style="width: 200px;',
             				   'sort_column' 	=> 'menu_order',
             				   'sort_order'		=> 'ASC',
+            				   'show_option_none' => __('Select a page...', 'woothemes'),
             				   'selected'		=> $page_setting);
             	
             	if( isset($value['args']) ) $args = wp_parse_args($value['args'], $args);

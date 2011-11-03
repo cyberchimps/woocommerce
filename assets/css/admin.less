@@ -526,6 +526,32 @@ ul.recent-orders, ul.stock_list {
 .woocommerce table.shippingrows td a.remove {
 	margin: 0 !important;
 }
+.woocommerce table.shippingrows .dupe, .woocommerce table.shippingrows .remove {
+	float: right;
+	margin-left: 9px;
+}
+.woocommerce table.shippingrows tbody .check-column {
+	padding: 0;
+	input {
+		margin: 0 0 0 8px;
+	}
+}
+.woocommerce table.shippingrows td.country {
+	width: 300px;
+	p {
+		line-height: 21px;
+		margin: 0;
+		color: #666;
+	}
+	button.edit_options {
+		float: right;
+		margin: 0;
+	}
+	select {
+		margin: 9px 0;
+		width: 100%;
+	}
+}
 
 div.taxrows {
 	.taxrow {
@@ -834,7 +860,7 @@ div.multi_select_products_wrapper-alt {
 		}
 	}
 }
-.woocommerce_variation {
+.woocommerce_variation, .default_variation {
 	background: #ececec;
 	border: 1px solid #ececec;
 	margin: 0 0 8px;
@@ -910,6 +936,7 @@ img.tips {
 /* Datepicker */
 img.ui-datepicker-trigger { vertical-align: middle; margin-top: -1px; cursor: pointer }
 .woocommerce_options_panel img.ui-datepicker-trigger { float: left; margin-right: 8px; margin-top: 4px; margin-left: 4px; }
+#ui-datepicker-div { display: none }
 
 /* Reports */
 .woocommerce-reports-wrap {

@@ -4,7 +4,9 @@
 
 <p><?php _e("Your order is complete. Your order's details are below:", 'woothemes'); ?></p>
 
-<h2><?php echo __('Order #: ', 'woothemes') . $order->id; ?></h2>
+<?php do_action('woocommerce_email_before_order_table', $order, false); ?>
+
+<h2><?php echo __('Order #:', 'woothemes') . ' ' . $order->id; ?></h2>
 
 <table cellspacing="0" cellpadding="2" style="width: 100%;">
 	<thead>
@@ -41,9 +43,7 @@
 	</tbody>
 </table>
 
-<?php if ($order->customer_note) : ?>
-	<p><strong><?php _e('Note:', 'woothemes'); ?></strong> <?php echo $order->customer_note; ?></p>
-<?php endif; ?>
+<?php do_action('woocommerce_email_after_order_table', $order, false); ?>
 
 <h2><?php _e('Customer details', 'woothemes'); ?></h2>
 

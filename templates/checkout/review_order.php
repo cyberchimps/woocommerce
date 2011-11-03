@@ -36,7 +36,7 @@
 							
 							if ($method->shipping_total>0) :
 								echo woocommerce_price($method->shipping_total);
-								if ($method->shipping_tax>0) : __(' (ex. tax)', 'woothemes'); endif;
+								if ($method->shipping_tax>0) : ' ' . $woocommerce->countries->ex_tax_or_vat(); endif;
 							else :
 								echo __('Free', 'woothemes');
 							endif;
@@ -49,7 +49,7 @@
 						
 					else :
 						
-						if ( !$woocommerce->customer->get_country() ) :
+						if ( !$woocommerce->customer->get_shipping_country() || !$woocommerce->customer->get_shipping_state() || !$woocommerce->customer->get_shipping_postcode() ) : 
 							echo '<p>'.__('Please fill in your details above to see available shipping methods.', 'woothemes').'</p>';
 						else :
 							echo '<p>'.__('Sorry, it seems that there are no available shipping methods for your state. Please contact us if you require assistance or wish to make alternate arrangements.', 'woothemes').'</p>';

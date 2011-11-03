@@ -214,7 +214,7 @@ function orders_within_range( $where = '' ) {
 	global $start_date, $end_date;
 	
 	$after = date('Y-m-d', $start_date);
-	$before = date('Y-m-d', $end_date);
+	$before = date('Y-m-d', strtotime('+1 day', $end_date));
 	
 	$where .= " AND post_date > '$after'";
 	$where .= " AND post_date < '$before'";
@@ -238,7 +238,7 @@ function woocommerce_sales_overview() {
 	    'orderby'         => 'post_date',
 	    'order'           => 'DESC',
 	    'post_type'       => 'shop_order',
-	    'post_status'     => 'publish' ,
+	    'post_status'     => 'publish',
 	    'tax_query' => array(
 	    	array(
 		    	'taxonomy' => 'shop_order_status',
@@ -304,7 +304,7 @@ function woocommerce_sales_overview() {
 							echo '
 							<li>
 								<span class="order-status '.sanitize_title($this_order->status).'">'.ucwords($this_order->status).'</span> <a href="'.admin_url('post.php?post='.$order->ID).'&action=edit">'.date_i18n('jS M Y (h:i A)', strtotime($this_order->order_date)).'</a><br />
-								<small>'.sizeof($this_order->items).' '._n('item', 'items', sizeof($this_order->items), 'woothemes').' <span class="order-cost">'.__('Total: ', 'woothemes').woocommerce_price($this_order->order_total).'</span> <span class="order-customer">'.$customer.'</span></small>
+								<small>'.sizeof($this_order->items).' '._n('item', 'items', sizeof($this_order->items), 'woothemes').' <span class="order-cost">'.__('Total:', 'woothemes') . ' ' . woocommerce_price($this_order->order_total).'</span> <span class="order-customer">'.$customer.'</span></small>
 							</li>';
 							
 							$count++;
@@ -357,6 +357,7 @@ function woocommerce_sales_overview() {
 	// Blank date ranges to begin
 	$count = 0;
 	$days = ($end_date - $start_date) / (60 * 60 * 24);
+	if ($days==0) $days = 1;
 
 	while ($count < $days) :
 		$time = strtotime(date('Ymd', strtotime('+ '.$count.' DAY', $start_date))).'000';
@@ -498,6 +499,7 @@ function woocommerce_daily_sales() {
 	// Blank date ranges to begin
 	$count = 0;
 	$days = ($end_date - $start_date) / (60 * 60 * 24);
+	if ($days==0) $days = 1;
 
 	while ($count < $days) :
 		$time = strtotime(date('Ymd', strtotime('+ '.$count.' DAY', $start_date))).'000';
@@ -1239,6 +1241,7 @@ function woocommerce_customer_overview() {
 	// Blank date ranges to begin
 	$count = 0;
 	$days = ($end_date - $start_date) / (60 * 60 * 24);
+	if ($days==0) $days = 1;
 
 	while ($count < $days) :
 		$time = strtotime(date('Ymd', strtotime('+ '.$count.' DAY', $start_date))).'000';

@@ -157,7 +157,7 @@ if (!function_exists('woocommerce_show_product_thumbnails')) {
 		$attachments = get_posts($args);
 		if ($attachments) :
 			$loop = 0;
-			$columns = 3;
+			$columns = apply_filters('woocommerce_product_thumbnails_columns', 3);
 			foreach ( $attachments as $attachment ) : 
 				
 				$loop++;
@@ -218,7 +218,7 @@ if (!function_exists('woocommerce_template_single_meta')) {
 	function woocommerce_template_single_meta( $post, $_product ) {
 		
 		?>
-		<div class="product_meta"><?php if ($_product->is_type('simple') && get_option('woocommerce_enable_sku')=='yes') : ?><span class="sku">SKU: <?php echo $_product->sku; ?>.</span><?php endif; ?><?php echo $_product->get_categories( ', ', ' <span class="posted_in">Posted in ', '.</span>'); ?><?php echo $_product->get_tags( ', ', ' <span class="tagged_as">Tagged as ', '.</span>'); ?></div>
+		<div class="product_meta"><?php if ($_product->is_type('simple') && get_option('woocommerce_enable_sku')=='yes') : ?><span class="sku"><?php _e('SKU:', 'woothemes'); ?> <?php echo $_product->sku; ?>.</span><?php endif; ?><?php echo $_product->get_categories( ', ', ' <span class="posted_in">'.__('Posted in', 'woothemes').' ', '.</span>'); ?><?php echo $_product->get_tags( ', ', ' <span class="tagged_as">'.__('Tagged as', 'woothemes').' ', '.</span>'); ?></div>
 		<?php
 		
 	}
@@ -352,6 +352,7 @@ if (!function_exists('woocommerce_variable_add_to_cart')) {
 		global $post, $_product, $woocommerce;
 		
 		$attributes = $_product->get_available_attribute_variations();
+		$default_attributes = (array) maybe_unserialize(get_post_meta( $post->ID, '_default_attributes', true ));
 
 		// Put available variations into an array and put in a Javascript variable (JSON encoded)
         $available_variations = array();
@@ -361,7 +362,7 @@ if (!function_exists('woocommerce_variable_add_to_cart')) {
             
             if($variation instanceof woocommerce_product_variation) {
                         	
-            	if ($variation->variation->post_status != 'publish') continue; // Disabled
+            	if (get_post_status( $variation->get_variation_id() ) != 'publish') continue; // Disabled
             
                 $variation_attributes = $variation->get_variation_attributes();
                 $availability = $variation->get_availability();
@@ -402,6 +403,7 @@ if (!function_exists('woocommerce_variable_add_to_cart')) {
 							<option value=""><?php echo __('Choose an option', 'woothemes') ?>&hellip;</option>
 							<?php if(is_array($options)) : ?>
 								<?php
+									$selected_value = (isset($default_attributes[sanitize_title($name)])) ? $default_attributes[sanitize_title($name)] : '';
 									// Get terms if this is a taxonomy - ordered
 									if (taxonomy_exists(sanitize_title($name))) :
 										$args = array('menu_order' => 'ASC');
@@ -409,11 +411,11 @@ if (!function_exists('woocommerce_variable_add_to_cart')) {
 	
 										foreach ($terms as $term) : 
 											if (!in_array($term->slug, $options)) continue;
-											echo '<option value="'.$term->slug.'">'.$term->name.'</option>';
+											echo '<option value="'.$term->slug.'" '.selected($selected_value, $term->slug).'>'.$term->name.'</option>';
 										endforeach; 
 									else :
 										foreach ($options as $option) : 
-											echo '<option value="'.$option.'">'.$option.'</option>';
+											echo '<option value="'.$option.'" '.selected($selected_value, $option).'>'.$option.'</option>';
 										endforeach;
 									endif;
 								?>
@@ -576,10 +578,10 @@ if (!function_exists('woocommerce_output_related_products')) {
 if (!function_exists('woocommerce_related_products')) {
 	function woocommerce_related_products( $posts_per_page = 4, $post_columns = 4, $orderby = 'rand' ) {
 		
-		global $_product, $columns;
+		global $_product, $woocommerce_loop;
 		
 		// Pass vars to loop
-		$columns = $post_columns;
+		$woocommerce_loop['columns'] = $post_columns;
 		
 		$related = $_product->get_related();
 		if (sizeof($related)>0) :
@@ -677,7 +679,8 @@ if (!function_exists('woocommerce_cart_totals')) {
 		?>
 		<div class="cart_totals">
 		<?php
-		if ($available_methods || !$woocommerce->customer->get_shipping_country() || !$woocommerce->shipping->enabled ) : 
+		//if ( !$woocommerce->shipping->enabled || $available_methods || !$woocommerce->customer->get_shipping_country() || !$woocommerce->customer->get_shipping_state() || !$woocommerce->customer->get_shipping_postcode() ) : 
+		if ( !$woocommerce->shipping->enabled || $available_methods || !$woocommerce->customer->get_shipping_country() || !isset($_SESSION['calculated_shipping']) || !$_SESSION['calculated_shipping'] ) : 
 			// Hide totals if customer has set location and there are no methods going there
 			?>
 			<h2><?php _e('Cart Totals', 'woothemes'); ?></h2>
@@ -705,14 +708,14 @@ if (!function_exists('woocommerce_cart_totals')) {
 					
 												echo woocommerce_price($method->shipping_total);
 												if ($method->shipping_tax>0) :
-													_e(' (ex. tax)', 'woothemes');
+													echo ' ' . $woocommerce->countries->ex_tax_or_vat();
 												endif;
 												
 											else :
 												
 												echo woocommerce_price($method->shipping_total + $method->shipping_tax);
 												if ($method->shipping_tax>0) :
-													_e(' (inc. tax)', 'woothemes');
+													echo ' ' . $woocommerce->countries->inc_tax_or_vat();
 												endif;
 											
 											endif;
@@ -751,7 +754,12 @@ if (!function_exists('woocommerce_cart_totals')) {
 			<p><small><?php _e('Note: Tax and shipping totals are estimated and will be updated during checkout based on your billing information.', 'woothemes'); ?></small></p>
 			<?php
 		else :
-			echo '<p>'.__('Sorry, it seems that there are no available shipping methods to your location. Please contact us if you require assistance or wish to make alternate arrangements.', 'woothemes').'</p>';
+			?>
+			<div class="woocommerce_error">
+				<p><?php if (!$woocommerce->customer->get_shipping_state() || !$woocommerce->customer->get_shipping_postcode()) : ?><?php _e('No shipping methods were found; please recalculate your shipping and enter your state/county and zip/postcode to ensure their are no other available methods for your location.', 'woothemes'); ?><?php else : ?><?php printf(__('Sorry, it seems that there are no available shipping methods for your location (%s).', 'woothemes'), $woocommerce->countries->countries[ $woocommerce->customer->get_shipping_country() ]); ?><?php endif; ?></p>
+				<p><?php _e('If you require assistance or wish to make alternate arrangements please contact us.', 'woothemes'); ?></p>
+			</div>
+			<?php
 		endif;
 		?>
 		</div>
@@ -984,7 +992,7 @@ if (!function_exists('woocommerce_breadcrumb')) {
 			elseif ( is_author() ) :
 			
 				$userdata = get_userdata($author);
-				echo $before . __('Author: ', 'woothemes') . $userdata->display_name . $after;
+				echo $before . __('Author:', 'woothemes') . ' ' . $userdata->display_name . $after;
 	     	
 		    endif;
 	 
@@ -1040,8 +1048,8 @@ function woocommerce_upsell_display() {
  * Display Cross Sells
  **/
 function woocommerce_cross_sell_display() {
-	global $columns, $woocommerce;
-	$columns = 2;
+	global $woocommerce_loop, $woocommerce;
+	$woocommerce_loop['columns'] = 2;
 	$crosssells = $woocommerce->cart->get_cross_sells();
 	
 	if (sizeof($crosssells)>0) :
@@ -1082,9 +1090,11 @@ function woocommerce_demo_store() {
  * display product sub categories as thumbnails
  **/
 function woocommerce_product_subcategories() {
-	global $woocommerce, $columns, $loop, $wp_query, $wp_the_query;
+	global $woocommerce, $woocommerce_loop, $wp_query, $wp_the_query, $_chosen_attributes;
 	
 	if ($wp_query !== $wp_the_query) return; // Detect main query
+	
+	if (sizeof($_chosen_attributes)>0 || (isset($_GET['max_price']) && isset($_GET['min_price']))) return; // Don't show when filtering
 	
 	if (is_search()) return;
 	if (!is_product_category() && !is_shop()) return;
@@ -1100,40 +1110,63 @@ function woocommerce_product_subcategories() {
 		$parent = 0;
 	endif;
 	
+	// NOTE: using child_of instead of parent - this is not ideal but due to a WP bug (http://core.trac.wordpress.org/ticket/15626) pad_counts won't work
 	$args = array(
-	    'parent'                   => $parent,
-	    'orderby'                  => 'menu_order',
-	    'order'                    => 'ASC',
-	    'hide_empty'               => 1,
-	    'hierarchical'             => 0,
-	    'taxonomy'                 => 'product_cat',
+	    'child_of'                  => $parent,
+	    'orderby'                  	=> 'menu_order',
+	    'order'                    	=> 'ASC',
+	    'hide_empty'               	=> 1,
+	    'hierarchical'             	=> 1,
+	    'taxonomy'                  => 'product_cat',
+	    'pad_counts'				=> 1
 	    );
 	$categories = get_categories( $args );
-	if ($categories) foreach ($categories as $category) : $loop++;
-			
-		?>
-		<li class="product sub-category <?php if ($loop%$columns==0) echo 'last'; if (($loop-1)%$columns==0) echo 'first'; ?>">
-			
-			<?php do_action('woocommerce_before_subcategory', $category); ?>
-			
-			<a href="<?php echo get_term_link($category->slug, 'product_cat'); ?>">
-				
-				<?php do_action('woocommerce_before_subcategory_title', $category); ?>
-				
-				<h3><?php echo $category->name; ?> <mark class="count">(<?php echo $category->count; ?>)</mark></h3>
-				
-				<?php do_action('woocommerce_after_subcategory_title', $category); ?>
-			
-			</a>
+	if ($categories) :
 	
-			<?php do_action('woocommerce_after_subcategory', $category); ?>
+		$found = false;
+
+		foreach ($categories as $category) : 
 			
-		</li><?php 
+			if ($category->parent != $parent) continue;
+			
+			$found = true;
+			
+			$woocommerce_loop['loop']++;
+			
+			?>
+			<li class="product sub-category <?php if ($woocommerce_loop['loop']%$woocommerce_loop['columns']==0) echo 'last'; if (($woocommerce_loop['loop']-1)%$woocommerce_loop['columns']==0) echo 'first'; ?>">
+				
+				<?php do_action('woocommerce_before_subcategory', $category); ?>
+				
+				<a href="<?php echo get_term_link($category->slug, 'product_cat'); ?>">
+					
+					<?php do_action('woocommerce_before_subcategory_title', $category); ?>
+					
+					<h3><?php echo $category->name; ?> <?php if ($category->count>0) : ?><mark class="count">(<?php echo $category->count; ?>)</mark><?php endif; ?></h3>
+					
+					<?php do_action('woocommerce_after_subcategory_title', $category); ?>
+				
+				</a>
 		
-	endforeach;
+				<?php do_action('woocommerce_after_subcategory', $category); ?>
+				
+			</li><?php 
+			
+		endforeach;
+		
+		if ($found==true && get_option('woocommerce_hide_products_when_showing_subcategories')=='yes') :
+			// We are hiding products - disable the loop and pagination
+			$woocommerce_loop['show_products'] = false;
+			$wp_query->max_num_pages = 0;
+		endif;
+		
+	endif;
 	
 }
 
+/**
+ * Show subcategory thumbnail
+ **/
 function woocommerce_subcategory_thumbnail( $category ) {
 	global $woocommerce;
 	
@@ -1153,3 +1186,122 @@ function woocommerce_subcategory_thumbnail( $category ) {
 	echo '<img src="'.$image.'" alt="'.$category->slug.'" width="'.$image_width.'" height="'.$image_height.'" />';
 }
 
+/**
+ * Display an orders details in a table
+ **/
+function woocommerce_order_details_table( $order_id ) {
+	
+	if (!$order_id) return;
+	
+	$order = &new woocommerce_order( $order_id );
+	?>	
+	<h2><?php _e('Order Details', 'woothemes'); ?></h2>	
+	<table class="shop_table">
+		<thead>
+			<tr>
+				<th><?php _e('Product', 'woothemes'); ?></th>
+				<th><?php _e('Qty', 'woothemes'); ?></th>
+				<th><?php _e('Totals', 'woothemes'); ?></th>
+			</tr>
+		</thead>
+		<tfoot>
+			<tr>
+				<td colspan="2"><?php _e('Subtotal', 'woothemes'); ?></td>
+				<td><?php echo $order->get_subtotal_to_display(); ?></td>
+			</tr>
+			<?php if ($order->order_shipping>0) : ?><tr>
+				<td colspan="2"><?php _e('Shipping', 'woothemes'); ?></td>
+				<td><?php echo $order->get_shipping_to_display(); ?></small></td>
+			</tr><?php endif; ?>
+			<?php if ($order->get_total_tax()>0) : ?><tr>
+				<td colspan="2"><?php _e('Tax', 'woothemes'); ?></td>
+				<td><?php echo woocommerce_price($order->get_total_tax()); ?></td>
+			</tr><?php endif; ?>
+			<?php if ($order->order_discount>0) : ?><tr class="discount">
+				<td colspan="2"><?php _e('Discount', 'woothemes'); ?></td>
+				<td>-<?php echo woocommerce_price($order->order_discount); ?></td>
+			</tr><?php endif; ?>
+			<tr>
+				<td colspan="2"><strong><?php _e('Grand Total', 'woothemes'); ?></strong></td>
+				<td><strong><?php echo woocommerce_price($order->order_total); ?></strong></td>
+			</tr>
+			<?php if ($order->customer_note) : ?>
+			<tr>
+				<td><?php _e('Note:', 'woothemes'); ?></td>
+				<td colspan="2"><?php echo wpautop(wptexturize($order->customer_note)); ?></td>
+			</tr>
+			<?php endif; ?>
+		</tfoot>
+		<tbody>
+			<?php
+			if (sizeof($order->items)>0) : 
+			
+				foreach($order->items as $item) : 
+				
+					if (isset($item['variation_id']) && $item['variation_id'] > 0) :
+						$_product = &new woocommerce_product_variation( $item['variation_id'] );
+					else :
+						$_product = &new woocommerce_product( $item['id'] );
+					endif;
+				
+					echo '
+						<tr>
+							<td class="product-name">'.$item['name'];
+					
+					if (isset($item['item_meta'])) :
+						echo woocommerce_get_formatted_variation( $item['item_meta'] );
+					endif;
+					
+					echo '	</td>
+							<td>'.$item['qty'].'</td>
+							<td>'.woocommerce_price( $item['cost']*$item['qty'], array('ex_tax_label' => 1) ).'</td>
+						</tr>';
+				endforeach; 
+			endif;
+			?>
+		</tbody>
+	</table>
+	
+	<header>
+		<h2><?php _e('Customer details', 'woothemes'); ?></h2>
+	</header>
+	<dl>
+	<?php
+		if ($order->billing_email) echo '<dt>'.__('Email:', 'woothemes').'</dt><dd>'.$order->billing_email.'</dd>';
+		if ($order->billing_phone) echo '<dt>'.__('Telephone:', 'woothemes').'</dt><dd>'.$order->billing_phone.'</dd>';
+	?>
+	</dl>
+	
+	<div class="col2-set addresses">
+
+		<div class="col-1">
+		
+			<header class="title">
+				<h3><?php _e('Shipping Address', 'woothemes'); ?></h3>
+			</header>
+			<address><p>
+				<?php
+					if (!$order->formatted_shipping_address) _e('N/A', 'woothemes'); else echo $order->formatted_shipping_address;
+				?>
+			</p></address>
+		
+		</div><!-- /.col-1 -->
+		
+		<div class="col-2">
+		
+			<header class="title">				
+				<h3><?php _e('Billing Address', 'woothemes'); ?></h3>
+			</header>
+			<address><p>
+				<?php
+					if (!$order->formatted_billing_address) _e('N/A', 'woothemes'); else echo $order->formatted_billing_address;
+				?>
+			</p></address>
+		
+		</div><!-- /.col-2 -->
+	
+	</div><!-- /.col2-set -->
+	
+	<div class="clear"></div>
+	<?php
+}

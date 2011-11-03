@@ -2,9 +2,11 @@
 
 <?php do_action('woocommerce_email_header'); ?>
 
-<p><?php echo __("You have received an order from ", 'woothemes') . $order->billing_first_name . ' ' . $order->billing_last_name . __(". Their order is as follows:", 'woothemes'); ?></p>
+<p><?php echo __('You have received an order from', 'woothemes') . ' ' . $order->billing_first_name . ' ' . $order->billing_last_name . __(". Their order is as follows:", 'woothemes'); ?></p>
 
-<h2><?php echo __('Order #: ', 'woothemes') . $order->id; ?></h2>
+<?php do_action('woocommerce_email_before_order_table', $order, true); ?>
+
+<h2><?php echo __('Order #:', 'woothemes') . ' ' . $order->id; ?></h2>
 
 <table cellspacing="0" cellpadding="2" style="width: 100%;">
 	<thead>
@@ -41,9 +43,7 @@
 	</tbody>
 </table>
 
-<?php if ($order->customer_note) : ?>
-	<p><strong><?php _e('Note:', 'woothemes'); ?></strong> <?php echo $order->customer_note; ?></p>
-<?php endif; ?>
+<?php do_action('woocommerce_email_after_order_table', $order, true); ?>
 
 <h2><?php _e('Customer details', 'woothemes'); ?></h2>
 

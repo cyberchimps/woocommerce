@@ -13,10 +13,10 @@
  * Mail from name/email
  **/
 function woocommerce_mail_from_name( $name ) {
-	return esc_attr(get_bloginfo('name'));
+	return get_option('woocommerce_email_from_name');
 }
 function woocommerce_mail_from( $email ) {
-	return get_option('admin_email');
+	return get_option('woocommerce_email_from_address');
 }
 
 /**
@@ -108,9 +108,9 @@ function woocommerce_new_order_notification( $id ) {
 	
 	// Get contents
 	$message = ob_get_clean();
-	
+
 	// Send the mail	
-	woocommerce_mail( get_option('admin_email'), $subject, $message );
+	woocommerce_mail( get_option('woocommerce_new_order_email_recipient'), $subject, $message );
 }
 
 
@@ -130,7 +130,7 @@ function woocommerce_processing_order_customer_notification( $id ) {
 	
 	$email_heading = __('Order Received', 'woothemes');
 	
-	$subject = '[' . get_bloginfo('name') . '] ' . __('Order Received', 'woothemes');
+	$subject = sprintf(__('[%s] Order Received', 'woothemes'), get_bloginfo('name'));
 	
 	// Buffer
 	ob_start();
@@ -160,14 +160,16 @@ function woocommerce_completed_order_customer_notification( $id ) {
 	$order = &new woocommerce_order( $order_id );
 	
 	if ($order->has_downloadable_item()) :
-		$email_heading = __('Order Complete/Download Links', 'woothemes');
+		$subject		= __('[%s] Order Complete/Download Links', 'woothemes');
+		$email_heading 	= __('Order Complete/Download Links', 'woothemes');
 	else :
-		$email_heading = __('Order Complete', 'woothemes');
+		$subject		= __('[%s] Order Complete', 'woothemes');
+		$email_heading 	= __('Order Complete', 'woothemes');
 	endif;
 	
 	$email_heading = apply_filters('woocommerce_completed_order_customer_notification_subject', $email_heading);
 
-	$subject = '[' . get_bloginfo('name') . '] ' . $email_heading;
+	$subject = sprintf($subject, get_bloginfo('name'));
 	
 	// Buffer
 	ob_start();
@@ -196,7 +198,7 @@ function woocommerce_pay_for_order_customer_notification( $id ) {
 	
 	$email_heading = __('Pay for Order', 'woothemes');
 
-	$subject = '[' . get_bloginfo('name') . '] ' . __('Pay for Order', 'woothemes');
+	$subject = sprintf(__('[%s] Pay for Order', 'woothemes'), get_bloginfo('name'));
 
 	// Buffer
 	ob_start();
@@ -220,7 +222,7 @@ function woocommerce_low_stock_notification( $product ) {
 	$subject = '[' . get_bloginfo('name') . '] ' . __('Product low in stock', 'woothemes');
 	$message = '#' . $_product->id .' '. $_product->get_title() . ' ('. $_product->sku.') ' . __('is low in stock.', 'woothemes');
 	$message = wordwrap( html_entity_decode( strip_tags( $message ) ), 70 );
-	wp_mail( get_option('admin_email'), $subject, $message );
+	wp_mail( get_option('woocommerce_stock_email_recipient'), $subject, $message );
 }
 
 
@@ -232,7 +234,7 @@ function woocommerce_no_stock_notification( $product ) {
 	$subject = '[' . get_bloginfo('name') . '] ' . __('Product out of stock', 'woothemes');
 	$message = '#' . $_product->id .' '. $_product->get_title() . ' ('. $_product->sku.') ' . __('is out of stock.', 'woothemes');
 	$message = wordwrap( html_entity_decode( strip_tags( $message ) ), 70 );
-	wp_mail( get_option('admin_email'), $subject, $message );
+	wp_mail( get_option('woocommerce_stock_email_recipient'), $subject, $message );
 }
 
 
@@ -244,5 +246,63 @@ function woocommerce_product_on_backorder_notification( $product, $amount ) {
 	$subject = '[' . get_bloginfo('name') . '] ' . __('Product Backorder', 'woothemes');
 	$message = $amount . __(' units of #', 'woothemes') . $_product->id .' '. $_product->get_title() . ' ('. $_product->sku.') ' . __('have been backordered.', 'woothemes');
 	$message = wordwrap( html_entity_decode( strip_tags( $message ) ), 70 );
-	wp_mail( get_option('admin_email'), $subject, $message );
+	wp_mail( get_option('woocommerce_stock_email_recipient'), $subject, $message );
+}
+
+/**
+ * Preview Emails
+ **/
+add_action('admin_init', 'woocommerce_preview_emails');
+
+function woocommerce_preview_emails() {
+	if (isset($_GET['preview_woocommerce_mail'])) :
+		$nonce = $_REQUEST['_wpnonce'];
+		if (!wp_verify_nonce($nonce, 'preview-mail') ) die('Security check'); 
+		
+		global $email_heading;
+	
+		$email_heading = __('Email preview', 'woothemes');
+		
+		do_action('woocommerce_email_header');
+		
+		echo '<h2>WooCommerce sit amet</h2>';
+		
+		echo wpautop('Ut ut est qui euismod parum. Dolor veniam tation nihil assum mazim. Possim fiant habent decima et claritatem. Erat me usus gothica laoreet consequat. Clari facer litterarum aliquam insitam dolor. 
+
+Gothica minim lectores demonstraverunt ut soluta. Sequitur quam exerci veniam aliquip litterarum. Lius videntur nisl facilisis claritatem nunc. Praesent in iusto me tincidunt iusto. Dolore lectores sed putamus exerci est. ');
+		
+		do_action('woocommerce_email_footer');
+		
+		exit;
+		
+	endif;
+}
+
+/**
+ * Add order meta to email templates
+ **/
+add_action('woocommerce_email_after_order_table', 'woocommerce_email_order_meta', 10, 2);
+
+function woocommerce_email_order_meta( $order, $sent_to_admin ) {
+	
+	$meta = array();
+	$show_fields = apply_filters('woocommerce_email_order_meta_keys', array('coupons'), $sent_to_admin);
+
+	if ($order->customer_note) :
+		$meta[__('Note:', 'woothemes')] = wptexturize($order->customer_note);
+	endif;
+	
+	if ($show_fields) foreach ($show_fields as $field) :
+		
+		$value = get_post_meta( $order->id, $field, true );
+		if ($value) $meta[ucwords(esc_attr($field))] = wptexturize($value);
+		
+	endforeach;
+	
+	if (sizeof($meta)>0) :
+		echo '<h2>'.__('Order information', 'woothemes').'</h2>';
+		foreach ($meta as $key=>$value) :
+			echo '<p><strong>'.$key.':</strong> '.$value.'</p>';
+		endforeach;
+	endif;
 }

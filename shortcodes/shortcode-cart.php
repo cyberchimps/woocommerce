@@ -27,11 +27,11 @@ function woocommerce_cart( $atts ) {
 
 	// Update Shipping
 	elseif (isset($_POST['calc_shipping']) && $_POST['calc_shipping'] && $woocommerce->verify_nonce('cart')) :
-
+		
+		$_SESSION['calculated_shipping'] = true;
 		unset($_SESSION['_chosen_shipping_method']);
 		$country 	= $_POST['calc_shipping_country'];
 		$state 		= $_POST['calc_shipping_state'];
-		
 		$postcode 	= $_POST['calc_shipping_postcode'];
 		
 		if ($postcode && !$validation->is_postcode( $postcode, $country )) : 
@@ -115,9 +115,13 @@ function woocommerce_cart( $atts ) {
 							<td class="product-name">
 								<a href="<?php echo esc_url( get_permalink($values['product_id']) ); ?>"><?php echo $_product->get_title(); ?></a>
 								<?php
+									// Variation data
 									if($_product instanceof woocommerce_product_variation && is_array($values['variation'])) :
                             			echo woocommerce_get_formatted_variation( $values['variation'] );
                        				endif;
+                       				
+                       				// Backorder notification
+                       				if ($_product->backorders_require_notification() && $_product->total_stock<1) echo '<p class="backorder_notification">'.__('Available on backorder.', 'woothemes').'</p>';
 								?>
 							</td>
 							<td class="product-price"><?php echo woocommerce_price($_product->get_price()); ?></td>

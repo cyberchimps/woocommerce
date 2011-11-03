@@ -4,7 +4,9 @@
 
 <p><?php echo sprintf( __("An order has been created for you on &ldquo;%s&rdquo;. To pay for this order please use the following link: %s", 'woothemes'), get_bloginfo('name'), $order->get_checkout_payment_url() ); ?></p>
 
-<h2><?php echo __('Order #: ', 'woothemes') . $order->id; ?></h2>
+<?php do_action('woocommerce_email_before_order_table', $order, false); ?>
+
+<h2><?php echo __('Order #:', 'woothemes') . ' ' . $order->id; ?></h2>
 
 <table cellspacing="0" cellpadding="2" style="width: 100%;">
 	<thead>
@@ -41,8 +43,6 @@
 	</tbody>
 </table>
 
-<?php if ($order->customer_note) : ?>
-	<p><strong><?php _e('Note:', 'woothemes'); ?></strong> <?php echo $order->customer_note; ?></p>
-<?php endif; ?>
+<?php do_action('woocommerce_email_after_order_table', $order, false); ?>
 
 <?php do_action('woocommerce_email_footer'); ?>

@@ -12,6 +12,7 @@
 class woocommerce_product {
 	
 	var $id;
+	var $product_custom_fields;
 	var $exists;
 	var $attributes;
 	var $children;
@@ -49,8 +50,10 @@ class woocommerce_product {
 		
 		$this->id = (int) $id;
 
-		$product_custom_fields = get_post_custom( $this->id );
+		$this->product_custom_fields = get_post_custom( $this->id );
 		
+		$this->exists = (sizeof($this->product_custom_fields)>0) ? true : false;
+
 		// Define the data we're going to load: Key => Default value
 		$load_data = array(
 			'sku'			=> $this->id,
@@ -78,26 +81,15 @@ class woocommerce_product {
 		
 		// Load the data from the custom fields
 		foreach ($load_data as $key => $default) :
-			if (isset($product_custom_fields[$key][0]) && $product_custom_fields[$key][0]!=='') :
-				$this->$key = $product_custom_fields[$key][0];
-			else :
-				$this->$key = $default;
-			endif;
+			$this->$key = (isset($this->product_custom_fields[$key][0]) && $this->product_custom_fields[$key][0]!=='') ? $this->product_custom_fields[$key][0] : $default;
 		endforeach;
 		
 		// Load serialised data, unserialise twice to fix WP bug
-		if (isset($product_custom_fields['product_attributes'][0])) $this->attributes = maybe_unserialize( maybe_unserialize( $product_custom_fields['product_attributes'][0] )); else $this->attributes = array();		
+		if (isset($this->product_custom_fields['product_attributes'][0])) $this->attributes = maybe_unserialize( maybe_unserialize( $this->product_custom_fields['product_attributes'][0] )); else $this->attributes = array();		
 						
 		// Get product type
-		$terms = wp_get_object_terms( $id, 'product_type' );
-		if (!is_wp_error($terms) && $terms) :
-			$term = current($terms);
-			$this->product_type = $term->slug; 
-		else :
-			$this->product_type = 'simple';
-		endif;
-		
-		$this->get_children();
+		$terms = wp_get_object_terms( $id, 'product_type', array('fields' => 'names') );
+		$this->product_type = (isset($terms[0])) ? sanitize_title($terms[0]) : 'simple';
 		
 		// total_stock (stock of parent and children combined)
 		$this->total_stock = $this->stock;
@@ -113,12 +105,6 @@ class woocommerce_product {
 		
 		// Check sale
 		$this->check_sale_price();
-		
-		if ($product_custom_fields) :
-			$this->exists = true;		
-		else :
-			$this->exists = false;	
-		endif;
 	}
 	
 	/**
@@ -140,14 +126,14 @@ class woocommerce_product {
 			
 			if ($this->is_type('variable') || $this->is_type('grouped')) :
 			
-				if ($this->is_type('variable')) $child_post_type = 'product_variation'; else $child_post_type = 'product';
+				$child_post_type = ($this->is_type('variable')) ? 'product_variation' : 'product';
 			
 				if ( $children_products =& get_children( 'post_parent='.$this->id.'&post_type='.$child_post_type.'&orderby=menu_order&order=ASC' ) ) :
 	
 					if ($children_products) foreach ($children_products as $child) :
 						
 						if ($this->is_type('variable')) :
-							$child->product = &new woocommerce_product_variation( $child->ID );
+							$child->product = &new woocommerce_product_variation( $child->ID, $this->id, $this->product_custom_fields );
 						else :
 							$child->product = &new woocommerce_product( $child->ID );
 						endif;
@@ -319,7 +305,7 @@ class woocommerce_product {
 	function has_enough_stock( $quantity ) {
 		
 		if (!$this->managing_stock()) return true;
-		
+
 		if ($this->backorders_allowed()) return true;
 		
 		if ($this->stock >= $quantity) :
@@ -500,13 +486,13 @@ class woocommerce_product {
 				if ($child_price>$max_price || $max_price == '') $max_price = $child_price;
 			endforeach;
 			
-			$price .= '<span class="from">' . __('From: ', 'woothemes') . '</span>' . woocommerce_price($min_price);	
+			$price .= '<span class="from">' . __('From:', 'woothemes') . ' </span>' . woocommerce_price($min_price);	
 			
 			$price = apply_filters('woocommerce_grouped_price_html', $price, $this);
 				
 		elseif ($this->is_type('variable')) :
 			
-			if ( !$this->min_variation_price || $this->min_variation_price !== $this->max_variation_price ) $price .= '<span class="from">' . __('From: ', 'woothemes') . '</span>';
+			if ( !$this->min_variation_price || $this->min_variation_price !== $this->max_variation_price ) $price .= '<span class="from">' . __('From:', 'woothemes') . ' </span>';
 			
 			$price .= woocommerce_price($this->get_price());
 			
@@ -541,34 +527,45 @@ class woocommerce_product {
 		return $price;
 	}
 	
-	/** Returns the product rating in html format */
+	/** Returns the product rating in html format - ratings are stored in transient cache */
 	function get_rating_html( $location = '' ) {
-		global $wpdb;
 		
 		if ($location) $location = '_'.$location;
 		$star_size = apply_filters('woocommerce_star_rating_size'.$location, 16);
+
+		if ( false === ( $average_rating = get_transient( $this->id . '_woocommerce_average_rating' ) ) ) :
 		
-		$count = $wpdb->get_var("
-			SELECT COUNT(meta_value) FROM $wpdb->commentmeta 
-			LEFT JOIN $wpdb->comments ON $wpdb->commentmeta.comment_id = $wpdb->comments.comment_ID
-			WHERE meta_key = 'rating'
-			AND comment_post_ID = $this->id
-			AND comment_approved = '1'
-			AND meta_value > 0
-		");
-		
-		$ratings = $wpdb->get_var("
-			SELECT SUM(meta_value) FROM $wpdb->commentmeta 
-			LEFT JOIN $wpdb->comments ON $wpdb->commentmeta.comment_id = $wpdb->comments.comment_ID
-			WHERE meta_key = 'rating'
-			AND comment_post_ID = $this->id
-			AND comment_approved = '1'
-		");
-		
-		if ( $count>0 ) :
-			$rating = number_format($ratings / $count, 2);
+			global $wpdb;
+
+			$count = $wpdb->get_var("
+				SELECT COUNT(meta_value) FROM $wpdb->commentmeta 
+				LEFT JOIN $wpdb->comments ON $wpdb->commentmeta.comment_id = $wpdb->comments.comment_ID
+				WHERE meta_key = 'rating'
+				AND comment_post_ID = $this->id
+				AND comment_approved = '1'
+				AND meta_value > 0
+			");
 			
-			return '<div class="star-rating" title="'.sprintf(__('Rated %s out of 5', 'woothemes'), $rating).'"><span style="width:'.($rating*$star_size).'px"><span class="rating">'.$rating.'</span> '.__('out of 5', 'woothemes').'</span></div>';
+			$ratings = $wpdb->get_var("
+				SELECT SUM(meta_value) FROM $wpdb->commentmeta 
+				LEFT JOIN $wpdb->comments ON $wpdb->commentmeta.comment_id = $wpdb->comments.comment_ID
+				WHERE meta_key = 'rating'
+				AND comment_post_ID = $this->id
+				AND comment_approved = '1'
+			");
+		
+			if ( $count>0 ) :
+				$average_rating = number_format($ratings / $count, 2);
+			else :
+				$average_rating = '';
+			endif;
+			
+			set_transient( $this->id . '_woocommerce_average_rating', $average_rating );
+		
+		endif;
+
+		if ( $average_rating>0 ) :
+			return '<div class="star-rating" title="'.sprintf(__('Rated %s out of 5', 'woothemes'), $average_rating).'"><span style="width:'.($average_rating*$star_size).'px"><span class="rating">'.$average_rating.'</span> '.__('out of 5', 'woothemes').'</span></div>';
 		else :
 			return '';
 		endif;
@@ -692,7 +689,10 @@ class woocommerce_product {
 					endforeach;
 					echo implode(', ', $values);
 				else :
-					echo wpautop(wptexturize($attribute['value']));
+					// Convert pipes to commas
+					$value = explode('|', $attribute['value']);
+					$value = implode(', ', $value);
+					echo wpautop(wptexturize($value));
 				endif;
 				
 				echo '</td></tr>';
@@ -730,7 +730,7 @@ class woocommerce_product {
 
                 if ($variation instanceof woocommerce_product_variation) {
                 	
-                	if ($variation->variation->post_status != 'publish') continue; // Disabled
+                	if (get_post_status( $variation->get_variation_id() ) != 'publish') continue; // Disabled
                 	
                     $vattributes = $variation->get_variation_attributes();
 
