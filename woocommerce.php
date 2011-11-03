@@ -638,8 +638,7 @@ if ( ! function_exists('readfile_chunked')) {
     }
 }
 
-<<<<<<< HEAD
-=======
+
 /**
  * Cache
  **/
@@ -707,4 +706,4 @@ if (!function_exists('woocommerce_light_or_dark')) {
 	    return (hexdec($color) > 0xffffff/2) ? $dark : $light;
 	}
 }
->>>>>>> upstream/master
+
