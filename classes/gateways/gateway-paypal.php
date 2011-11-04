@@ -4,7 +4,7 @@
  * 
  * Provides a PayPal Standard Payment Gateway.
  *
- * @class 		woocommerce_moneybookers
+ * @class 		woocommerce_paypal
  * @package		WooCommerce
  * @category	Payment Gateways
  * @author		WooThemes
@@ -290,7 +290,10 @@ class woocommerce_paypal extends woocommerce_payment_gateway {
         $_POST['cmd'] = '_notify-validate';
 
         // Send back post vars to paypal
-        $params = array( 'body' => $_POST );
+        $params = array( 
+        	'body' => $_POST,
+        	'sslverify' => false
+        );
 
         // Get url
        	if ( $this->testmode == 'yes' ):

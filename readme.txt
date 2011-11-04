@@ -82,6 +82,15 @@ Yes you can! Join in on our GitHub repository :) https://github.com/woothemes/wo
 
 == Changelog ==
 
+= 1.2.1 =
+* Added shortcode insertion button to the post editor
+* Shortcode for products by category (slug)
+* Option to enable/disable ajax add to cart buttons
+* Widget for showing onsale products
+* Signup/login can be turned off for checkout
+* Paypal remote post now has 'sslverify' => false to prevent errors with CURL
+* Minor admin settings tidyup
+
 = 1.2 - 03/11/2011 =
 * Added quick status change buttons (processing/complete) to orders panel
 * Ability to preview email templates
