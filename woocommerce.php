@@ -589,7 +589,6 @@ if ( ! function_exists('readfile_chunked')) {
     }
 }
 
-
 /**
  * Cache
  **/
@@ -658,8 +657,6 @@ if (!function_exists('woocommerce_light_or_dark')) {
 	}
 }
 
-<<<<<<< HEAD
-=======
 /**
  * Variation Formatting
  *
@@ -705,6 +702,9 @@ function woocommerce_get_formatted_variation( $variation = '', $flat = false ) {
 		if (!$flat) $return .= '</dl>';
 
 		return $return;
+
+	endif;
+}rn $return;
 
 	endif;
 }

@@ -1,5 +1,3 @@
-<?php if (!defined('ABSPATH')) exit; ?>
-
 <?php global $order_id; $order = &new woocommerce_order( $order_id ); ?>
 
 <?php do_action('woocommerce_email_header'); ?>

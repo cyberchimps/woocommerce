@@ -82,10 +82,6 @@ Yes you can! Join in on our GitHub repository :) https://github.com/woothemes/wo
 
 == Changelog ==
 
-= 1.2.2 =
-* Tweaked 'pay' emails
-* Check at top of email templates to make sure they are not accessed directly
-
 = 1.2.1 - 10/11/2011 =
 * Reworked downloadable and virtual products - now variations can be downloadable/virtual too making it more flexible
 * My account/login widget
@@ -262,6 +258,9 @@ Yes you can! Join in on our GitHub repository :) https://github.com/woothemes/wo
 
 = 1.2.1 =
 This version has improved product types - ensure you de/re-activate the theme to ensure existing products get converted correctly.
+
+= 1.2 =
+New features, bug fixes and improvements to keep WooCommerce running smoothly.get converted correctly.
 
 = 1.2 =
 New features, bug fixes and improvements to keep WooCommerce running smoothly.

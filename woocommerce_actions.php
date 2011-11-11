@@ -28,43 +28,6 @@
  */
 
 /**
-* WP Affiliate eCommerce tracking
-**/
-
-add_action( 'woocommerce_thankyou', 'woocommerce_wp_affiliate_tracking' );
-
-function woocommerce_wp_affiliate_tracking( $order_id )
-{
-
-global $woocommerce;
-
-if ( empty( $_COOKIE['ap_id'] ) ) return;
-
-$referrer = $_COOKIE['ap_id'];
-
-$order    = &new woocommerce_order($order_id);
-
-if ( is_user_logged_in() )
-{
-
-    $user_id      = get_current_user_id();
-    $current_user = get_user_by('id', $user_id);
-    $username     = $current_user->user_login;
-    $email        = $current_user->user_email;
-
-} else {
-
-    $user_id        = '';
-    $username       = __('Guest', 'woothemes');
-    $email                  = '';
-
-}
-
-do_action('wp_affiliate_process_cart_commission', array( "referrer" => $referrer, "sale_amt" => $order->order_total, "txn_id" => $order_id, "buyer_email" => $email ) );
-} // end affiliate_tracking
-
-
-/**
  * Update catalog ordering if posted
  */
 add_action('init', 'woocommerce_update_catalog_ordering');
@@ -290,7 +253,7 @@ function woocommerce_add_order_note() {
 		if ($is_customer_note) echo 'customer-note';
 		echo '"><div class="note_content">';
 		echo wpautop(wptexturize($note));
-		echo '</div><p class="meta">'. sprintf(__('added %s ago', 'woothemes'), human_time_diff(current_time('timestamp'))) .' - <a href="#" class="delete_note">'.__('Delete note', 'woothemes').'</a></p>';
+		echo '</div><p class="meta">'. sprintf(__('added %s ago', 'woothemes'), human_time_diff(strtotime('NOW'))) .' - <a href="#" class="delete_note">'.__('Delete note', 'woothemes').'</a></p>';
 		echo '</li>';
 		
 	endif;
@@ -1041,6 +1004,27 @@ function woocommerce_products_rss_feed() {
 		$feed = get_post_type_archive_feed_link( 'product' );
 
 		echo '<link rel="alternate" type="application/rss+xml"  title="' . __('New products', 'woothemes') . '" href="' . $feed . '" />';
+	
+	elseif ( is_tax( 'product_cat' ) ) :
+		
+		$term = get_term_by('slug', get_query_var('product_cat'), 'product_cat');
+		
+		$feed = add_query_arg('product_cat', $term->slug, get_post_type_archive_feed_link( 'product' ));
+		
+		echo '<link rel="alternate" type="application/rss+xml"  title="' . sprintf(__('New products added to %s', 'woothemes'), urlencode($term->name)) . '" href="' . $feed . '" />';
+		
+	elseif ( is_tax( 'product_tag' ) ) :
+		
+		$term = get_term_by('slug', get_query_var('product_tag'), 'product_tag');
+		
+		$feed = add_query_arg('product_tag', $term->slug, get_post_type_archive_feed_link( 'product' ));
+		
+		echo '<link rel="alternate" type="application/rss+xml"  title="' . sprintf(__('New products tagged %s', 'woothemes'), urlencode($term->name)) . '" href="' . $feed . '" />';
+		
+	endif;
+
+}
+products', 'woothemes') . '" href="' . $feed . '" />';
 	
 	elseif ( is_tax( 'product_cat' ) ) :
 		

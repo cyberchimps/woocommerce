@@ -1,0 +1,2 @@
+[11-Nov-2011 15:41:55] PHP Fatal error:  Class 'woocommerce_payment_gateway' not found in /home/chimps/public_html/wp-content/plugins/woocommerce/classes/gateways/gateway-banktransfer.php on line 12
+[11-Nov-2011 16:00:32] PHP Fatal error:  Class 'woocommerce_payment_gateway' not found in /home/chimps/public_html/wp-content/plugins/woocommerce/classes/gateways/gateway-paypal.php on line 12

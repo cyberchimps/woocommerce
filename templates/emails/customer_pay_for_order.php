@@ -1,14 +1,8 @@
-<?php if (!defined('ABSPATH')) exit; ?>
-
 <?php global $order_id; $order = &new woocommerce_order( $order_id ); ?>
 
 <?php do_action('woocommerce_email_header'); ?>
 
-<?php if ($order->status=='pending') : ?>
-
-	<p><?php echo sprintf( __("An order has been created for you on &ldquo;%s&rdquo;. To pay for this order please use the following link: %s", 'woothemes'), get_bloginfo('name'), $order->get_checkout_payment_url() ); ?></p>
-	
-<?php endif; ?>
+<p><?php echo sprintf( __("An order has been created for you on &ldquo;%s&rdquo;. To pay for this order please use the following link: %s", 'woothemes'), get_bloginfo('name'), $order->get_checkout_payment_url() ); ?></p>
 
 <?php do_action('woocommerce_email_before_order_table', $order, false); ?>
 

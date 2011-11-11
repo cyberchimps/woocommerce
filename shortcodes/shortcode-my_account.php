@@ -83,70 +83,7 @@ function woocommerce_my_account( $atts ) {
 		
 		</table>
 		
-
-<<<<<<< HEAD
-=======
-			<div class="col-1">
-			
-				<header class="title">				
-					<h3><?php _e('Billing Address', 'woothemes'); ?></h3>
-					<a href="<?php echo esc_url( add_query_arg('address', 'billing', get_permalink(get_option('woocommerce_edit_address_page_id'))) ); ?>" class="edit"><?php _e('Edit', 'woothemes'); ?></a>	
-				</header>
-				<address>
-					<?php
-						if (isset($woocommerce->countries->countries[get_user_meta( get_current_user_id(), 'billing_country', true )])) $country = $woocommerce->countries->countries[get_user_meta( get_current_user_id(), 'billing_country', true )]; else $country = '';
-						$address = array(
-							get_user_meta( get_current_user_id(), 'billing_first_name', true ) . ' ' . get_user_meta( get_current_user_id(), 'billing_last_name', true )
-							,get_user_meta( get_current_user_id(), 'billing_company', true )
-							,get_user_meta( get_current_user_id(), 'billing_address', true )
-							,get_user_meta( get_current_user_id(), 'billing_address-2', true )
-							,get_user_meta( get_current_user_id(), 'billing_city', true )					
-							,get_user_meta( get_current_user_id(), 'billing_state', true )
-							,get_user_meta( get_current_user_id(), 'billing_postcode', true )
-							,$country
-						);
-						$address = array_map('trim', $address);
-						$formatted_address = array();
-						foreach ($address as $part) if (!empty($part)) $formatted_address[] = $part;
-						$formatted_address = implode(', ', $formatted_address);
-						if (!$formatted_address) _e('You have not set up a billing address yet.', 'woothemes'); else echo $formatted_address;
-					?>
-				</address>
-			
-			</div><!-- /.col-1 -->
-			
-			<div class="col-2">
-			
-				<header class="title">
-					<h3><?php _e('Shipping Address', 'woothemes'); ?></h3>
-					<a href="<?php echo esc_url( add_query_arg('address', 'shipping', get_permalink(get_option('woocommerce_edit_address_page_id'))) ); ?>" class="edit"><?php _e('Edit', 'woothemes'); ?></a>
-				</header>
-				<address>
-					<?php
-						if (isset($woocommerce->countries->countries[get_user_meta( get_current_user_id(), 'shipping_country', true )])) $country = $woocommerce->countries->countries[get_user_meta( get_current_user_id(), 'shipping_country', true )]; else $country = '';
-						$address = array(
-							get_user_meta( get_current_user_id(), 'shipping_first_name', true ) . ' ' . get_user_meta( get_current_user_id(), 'shipping_last_name', true )
-							,get_user_meta( get_current_user_id(), 'shipping_company', true )
-							,get_user_meta( get_current_user_id(), 'shipping_address', true )
-							,get_user_meta( get_current_user_id(), 'shipping_address-2', true )
-							,get_user_meta( get_current_user_id(), 'shipping_city', true )					
-							,get_user_meta( get_current_user_id(), 'shipping_state', true )
-							,get_user_meta( get_current_user_id(), 'shipping_postcode', true )
-							,$country
-						);
-						$address = array_map('trim', $address);
-						$formatted_address = array();
-						foreach ($address as $part) if (!empty($part)) $formatted_address[] = $part;
-						$formatted_address = implode(', ', $formatted_address);
-						if (!$formatted_address) _e('You have not set up a shipping address yet.', 'woothemes'); else echo $formatted_address;
-					?>
-				</address>
-			
-			</div><!-- /.col-2 -->
-		
-		</div><!-- /.col2-set -->
->>>>>>> upstream/master
-		<?php
+				<?php
 		do_action('woocommerce_after_my_account');
 		
 	else :

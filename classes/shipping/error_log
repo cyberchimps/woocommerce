@@ -1,0 +1,2 @@
+[11-Nov-2011 15:49:37] PHP Fatal error:  Class 'woocommerce_shipping_method' not found in /home/chimps/public_html/wp-content/plugins/woocommerce/classes/shipping/shipping-free_shipping.php on line 12
+[11-Nov-2011 15:56:08] PHP Fatal error:  Class 'woocommerce_shipping_method' not found in /home/chimps/public_html/wp-content/plugins/woocommerce/classes/shipping/shipping-flat_rate.php on line 12

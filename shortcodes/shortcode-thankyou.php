@@ -82,7 +82,7 @@ function woocommerce_thankyou( $atts ) {
 				</ul>
 				<div class="clear"></div>
 				
-						<?php if ($downloads = $woocommerce->customer->get_downloadable_products()) : ?>
+				<?php if ($downloads = $woocommerce->customer->get_downloadable_products()) : ?>
 		<h2><?php _e('Available downloads', 'woothemes'); ?></h2>
 		<ul class="digital-downloads">
 			<?php foreach ($downloads as $download) : ?>
@@ -90,14 +90,15 @@ function woocommerce_thankyou( $atts ) {
 			<?php endforeach; ?>
 		</ul>
 		<?php endif; ?>	
-		
-		<strong>Visit your account page <a href="http://cyberchimps.com/my-account/">here</a></strong>
+				
 				<?php
 			
 			endif;
 			
 			do_action( 'woocommerce_thankyou_' . $order->payment_method, $order_id );
 			do_action( 'woocommerce_thankyou', $order_id );
+			
+			
 			
 		endif;
 	

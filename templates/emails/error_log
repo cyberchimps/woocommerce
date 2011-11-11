@@ -1,0 +1,5 @@
+[11-Nov-2011 15:51:15] PHP Fatal error:  Class 'woocommerce_order' not found in /home/chimps/public_html/wp-content/plugins/woocommerce/templates/emails/new_order.php on line 1
+[11-Nov-2011 15:59:04] PHP Fatal error:  Class 'woocommerce_order' not found in /home/chimps/public_html/wp-content/plugins/woocommerce/templates/emails/customer_processing_order.php on line 1
+[11-Nov-2011 16:02:00] PHP Fatal error:  Call to undefined function woocommerce_hex_lighter() in /home/chimps/public_html/wp-content/plugins/woocommerce/templates/emails/email_footer.php on line 20
+[11-Nov-2011 16:06:50] PHP Fatal error:  Call to undefined function get_bloginfo() in /home/chimps/public_html/wp-content/plugins/woocommerce/templates/emails/email_header.php on line 6
+[11-Nov-2011 16:12:48] PHP Fatal error:  Class 'woocommerce_order' not found in /home/chimps/public_html/wp-content/plugins/woocommerce/templates/emails/customer_pay_for_order.php on line 1

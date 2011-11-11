@@ -152,7 +152,7 @@ class woocommerce_checkout {
 			
 			echo '<div class="create-account">';
 			
-			echo '<p> <br /><br /><br /><br />'.__('Create an account by entering the information below. If you are a returning customer please login with your username at the top of the page.', 'woothemes').'</p>'; 
+			echo '<p>'.__('Create an account by entering the information below. If you are a returning customer please login with your username at the top of the page.', 'woothemes').'</p>'; 
 			
 			$this->checkout_form_field( 'account_username', array( 
 				'type' => 'text', 
@@ -207,8 +207,7 @@ class woocommerce_checkout {
 			echo '<h3>'.__('Notes/Comments', 'woothemes').'</h3>';
 		endif;
 		
-		
-	}
+			}
 
 	/**
 	 * Outputs a checkout form field
@@ -283,6 +282,14 @@ class woocommerce_checkout {
 				$field = '<p class="form-row '.implode(' ', $args['class']).'">
 					<label for="'.$key.'" class="'.implode(' ', $args['label_class']).'">'.$args['label'].$required.'</label>
 					<textarea name="'.$key.'" class="input-text" id="'.$key.'" placeholder="'.$args['placeholder'].'" cols="5" rows="2">'. esc_textarea( $this->get_value( $key ) ).'</textarea>
+				</p>'.$after;
+				
+			break;
+			case "checkbox" :
+				
+				$field = '<p class="form-row '.implode(' ', $args['class']).'">
+					<input type="'.$args['type'].'" class="input-checkbox" name="'.$key.'" id="'.$key.'" value="1" '.checked($this->get_value( $key ), 1, false).' />
+					<label for="'.$key.'" class="checkbox '.implode(' ', $args['label_class']).'">'.$args['label'].$required.'</label>
 				</p>'.$after;
 				
 			break;
@@ -603,7 +610,7 @@ class woocommerce_checkout {
 						// Calc item tax to store
 						$rate = '';
 						if ( $_product->is_taxable()) :
-							$rate = $_tax->get_rate( $_product->tax_class );
+							$rate = $_tax->get_rate( $_product->get_tax_class() );
 						endif;
 						
 						// Store any item meta data - item meta class lets plugins add item meta in a standardized way
@@ -654,7 +661,7 @@ class woocommerce_checkout {
 							do_action('woocommerce_new_order', $order_id);
 						endif;
 					endif;
-					
+
 					// Get better formatted shipping method (title/label)
 					$shipping_method = $this->posted['shipping_method'];
 					if (isset($available_methods) && isset($available_methods[$this->posted['shipping_method']])) :
@@ -702,8 +709,12 @@ class woocommerce_checkout {
 					// Discount code meta
 					if ($applied_coupons = $woocommerce->cart->get_applied_coupons()) update_post_meta($order_id, 'coupons', implode(', ', $applied_coupons));
 					
+					// Order is saved
+					do_action('woocommerce_checkout_order_processed', $order_id, $this->posted);
+					
+					// Process payment
 					$order = &new woocommerce_order($order_id);
-
+					
 					if ($woocommerce->cart->needs_payment()) :
 						
 						// Store Order ID in session so it can be re-used after payment failure
