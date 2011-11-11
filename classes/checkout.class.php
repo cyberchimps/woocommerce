@@ -316,7 +316,7 @@ class woocommerce_checkout {
 
 			$woocommerce->verify_nonce('process_checkout');
 
-			if (sizeof($woocommerce->cart->cart_contents)==0) :
+			if (sizeof($woocommerce->cart->get_cart())==0) :
 				$woocommerce->add_error( sprintf(__('Sorry, your session has expired. <a href="%s">Return to homepage &rarr;</a>', 'woothemes'), home_url()) );
 			endif;
 			
@@ -500,7 +500,8 @@ class woocommerce_checkout {
 		                    wp_update_user( array ('ID' => $user_id, 'role' => 'customer') ) ;
 		
 		                    // send the user a confirmation and their login details
-		                    wp_new_user_notification( $user_id, $user_pass );
+		                    woocommerce_customer_new_account( $user_id, $user_pass );
+		                    //wp_new_user_notification( $user_id, $user_pass );
 		
 		                    // set the WP login cookie
 		                    $secure_cookie = is_ssl() ? true : false;
@@ -595,7 +596,7 @@ class woocommerce_checkout {
 					// Cart items
 					$order_items = array();
 					
-					foreach ($woocommerce->cart->cart_contents as $cart_item_key => $values) :
+					foreach ($woocommerce->cart->get_cart() as $cart_item_key => $values) :
 						
 						$_product = $values['data'];
 			
@@ -605,18 +606,17 @@ class woocommerce_checkout {
 							$rate = $_tax->get_rate( $_product->tax_class );
 						endif;
 						
-						// Store any item meta data
-						$item_meta = array();
+						// Store any item meta data - item meta class lets plugins add item meta in a standardized way
+						$item_meta = &new order_item_meta();
 						
-						// Variations meta
+						$item_meta->new_order_item( $values );
+						
+						// Store variation data in meta so admin can view it
 						if ($values['variation'] && is_array($values['variation'])) :
 							foreach ($values['variation'] as $key => $value) :
-								$item_meta[ esc_attr(str_replace('attribute_', '', $key)) ] = $value;
+								$item_meta->add( esc_attr(str_replace('attribute_', '', $key)), $value );
 							endforeach;
 						endif;
-
-						// Run filter
-						$item_meta = apply_filters('woocommerce_order_item_meta', $item_meta, $values);
 						
 						$order_items[] = apply_filters('new_order_item', array(
 					 		'id' 			=> $values['product_id'],
@@ -625,27 +625,11 @@ class woocommerce_checkout {
 					 		'qty' 			=> (int) $values['quantity'],
 					 		'cost' 			=> $_product->get_price_excluding_tax(),
 					 		'taxrate' 		=> $rate,
-					 		'item_meta'		=> $item_meta
+					 		'item_meta'		=> $item_meta->meta
 					 	), $values);
 					 	
-					 	// Check stock levels
-					 	if ($_product->managing_stock()) :
-							if (!$_product->is_in_stock() || !$_product->has_enough_stock( $values['quantity'] )) :
-								
-								$woocommerce->add_error( sprintf(__('Sorry, we do not have enough "%s" in stock to fulfil your order. Please edit your cart and try again. We apologise for any inconvenience caused.', 'woothemes'), $_product->get_title() ) );
-		                		break;
-								
-							endif;
-						else :
-						
-							if (!$_product->is_in_stock()) :
-							
-								$woocommerce->add_error( sprintf(__('Sorry, we do not have enough "%s" in stock to fulfil your order. Please edit your cart and try again. We apologise for any inconvenience caused.', 'woothemes'), $_product->get_title() ) );
-		                		break;
-
-							endif;
-							
-						endif;
+					 	// Check cart items for errors
+					 	do_action('woocommerce_check_cart_items');
 					 	
 					endforeach;
 					
@@ -716,7 +700,7 @@ class woocommerce_checkout {
 					wp_set_object_terms( $order_id, 'pending', 'shop_order_status' );
 						
 					// Discount code meta
-					if ($woocommerce->cart->applied_coupons) update_post_meta($order_id, 'coupons', implode(', ', $woocommerce->cart->applied_coupons));
+					if ($applied_coupons = $woocommerce->cart->get_applied_coupons()) update_post_meta($order_id, 'coupons', implode(', ', $applied_coupons));
 					
 					$order = &new woocommerce_order($order_id);
 

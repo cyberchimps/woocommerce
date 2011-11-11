@@ -109,6 +109,14 @@ $woocommerce_settings['general'] = apply_filters('woocommerce_general_settings',
 		'id' 		=> 'woocommerce_force_ssl_checkout',
 		'std' 		=> 'no',
 		'type' 		=> 'checkbox',
+		'checkboxgroup'		=> ''
+	),
+	
+	array(  
+		'desc' 		=> __( 'Un-force <abbr title="Secure Sockets Layer, a computing protocol that ensures the security of data sent via the Internet by using encryption">SSL</abbr>/HTTPS when leaving the checkout', 'woothemes' ),
+		'id' 		=> 'woocommerce_unforce_ssl_checkout',
+		'std' 		=> 'no',
+		'type' 		=> 'checkbox',
 		'checkboxgroup'		=> 'end'
 	),
 	
@@ -143,6 +151,22 @@ $woocommerce_settings['general'] = apply_filters('woocommerce_general_settings',
 		'id' 		=> 'woocommerce_demo_store',
 		'std' 		=> 'no',
 		'type' 		=> 'checkbox'
+	),
+	
+	array(  
+		'name' => __('File downloads', 'woothemes'),
+		'desc' 		=> __('Use <code>X-Accel-Redirect</code>/ <code>X-Sendfile</code> to serve downloads (server requires <code>mod_xsendfile</code>)', 'woothemes'),
+		'id' 		=> 'woocommerce_mod_xsendfile_enabled',
+		'type' 		=> 'checkbox',
+		'std' 		=> 'no',
+	),
+	
+	array(  
+		'name' => __('Localisation', 'woothemes'),
+		'desc' 		=> __('Use informal localisation file if it exists', 'woothemes'),
+		'id' 		=> 'woocommerce_informal_localisation_type',
+		'type' 		=> 'checkbox',
+		'std' 		=> 'no',
 	),
 	
 	array( 'type' => 'sectionend', 'id' => 'general_options'),

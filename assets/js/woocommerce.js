@@ -178,7 +178,7 @@ jQuery(document).ready(function($) {
 	$(".minus").live('click', function() {
 	    var currentVal = parseInt($(this).next(".qty").val());
 	    if (!currentVal || currentVal=="" || currentVal == "NaN") currentVal = 1;
-	    if (currentVal > 1)  $(this).next(".qty").val(currentVal - 1);
+	    if (currentVal > 0)  $(this).next(".qty").val(currentVal - 1);
 	});
 	
 	/* states */
@@ -192,6 +192,8 @@ jQuery(document).ready(function($) {
 		
 		var input_name = $(state_box).attr('name');
 		var input_id = $(state_box).attr('id');
+		
+		var value = $(state_box).val();
 
 		if (states[country]) {
 			var options = '';
@@ -205,6 +207,8 @@ jQuery(document).ready(function($) {
 				state_box = $('#' + $(this).attr('rel'));
 			}
 			$(state_box).html(options);
+			
+			$(state_box).val(value);
 		} else {
 			if ($(state_box).is('select')) {
 				$(state_box).replaceWith('<input type="text" placeholder="' + woocommerce_params.state_text + '" name="' + input_name + '" id="' + input_id + '" />');
@@ -394,7 +398,7 @@ jQuery(document).ready(function($) {
         $('.single_variation').text('');
 		check_variations();
 		$(this).blur();
-		if($.isFunction($.uniform.update)) {
+		if( $().uniform && $.isFunction($.uniform.update) ) {
 			$.uniform.update();
 		}
 		

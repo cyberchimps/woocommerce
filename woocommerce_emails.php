@@ -188,15 +188,13 @@ function woocommerce_completed_order_customer_notification( $id ) {
 /**
  * Pay for order notification email template - this one includes a payment link
  **/
-function woocommerce_pay_for_order_customer_notification( $id ) {
+function woocommerce_pay_for_order_customer_notification( $order ) {
 	
 	global $order_id, $email_heading;
 	
-	$order_id = $id;
+	$order_id = $order->id;
 	
-	$order = &new woocommerce_order( $order_id );
-	
-	$email_heading = __('Pay for Order', 'woothemes');
+	$email_heading = sprintf(__('Invoice for Order #%s', 'woothemes'), $order_id);
 
 	$subject = sprintf(__('[%s] Pay for Order', 'woothemes'), get_bloginfo('name'));
 
@@ -305,4 +303,37 @@ function woocommerce_email_order_meta( $order, $sent_to_admin ) {
 			echo '<p><strong>'.$key.':</strong> '.$value.'</p>';
 		endforeach;
 	endif;
+}
+
+
+/**
+ * Customer new account welcome email
+ **/
+function woocommerce_customer_new_account( $user_id, $plaintext_pass ) {
+	global $email_heading, $user_login, $user_pass, $blogname;
+	
+	if ( empty($plaintext_pass) ) return;
+	
+	$user = new WP_User($user_id);
+	
+	$user_login = stripslashes($user->user_login);
+	$user_email = stripslashes($user->user_email);
+	$user_pass 	= $plaintext_pass;
+	 
+	$blogname = wp_specialchars_decode(get_option('blogname'), ENT_QUOTES);
+	
+	$subject		= sprintf(__('Your account on %s', 'woothemes'), $blogname);
+	$email_heading 	= __('Your account details', 'woothemes');
+
+	// Buffer
+	ob_start();
+	
+	// Get mail template
+	woocommerce_get_template('emails/customer_new_account.php', false);
+	
+	// Get contents
+	$message = ob_get_clean();
+
+	// Send the mail	
+	woocommerce_mail( $user_email, $subject, $message );
 }
