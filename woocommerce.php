@@ -3,7 +3,7 @@
 Plugin Name: WooCommerce
 Plugin URI: http://www.woothemes.com/woocommerce/
 Description: An eCommerce plugin for wordpress.
-Version: 1.2
+Version: 1.2.1
 Author: WooThemes
 Author URI: http://woothemes.com
 Requires at least: 3.1
@@ -18,11 +18,17 @@ if (!session_id()) session_start();
 load_plugin_textdomain('woothemes', false, dirname( plugin_basename( __FILE__ ) ) . '/languages');
 load_plugin_textdomain('woothemes', false, dirname( plugin_basename( __FILE__ ) ) . '/../../languages/woocommerce');
 
+if (get_option('woocommerce_informal_localisation_type')=='yes') :
+	load_plugin_textdomain('woothemes', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/informal');
+else :
+	load_plugin_textdomain('woothemes', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/formal');
+endif;
+
 /**
  * Constants
  **/ 
 if (!defined('WOOCOMMERCE_TEMPLATE_URL')) define('WOOCOMMERCE_TEMPLATE_URL', 'woocommerce/');
-if (!defined("WOOCOMMERCE_VERSION")) define("WOOCOMMERCE_VERSION", "1.2");	
+if (!defined("WOOCOMMERCE_VERSION")) define("WOOCOMMERCE_VERSION", "1.2.1");	
 if (!defined("PHP_EOL")) define("PHP_EOL", "\r\n");
 
 /**
@@ -313,16 +319,16 @@ if (!function_exists('is_ajax')) {
 /**
  * Force SSL (if enabled)
  **/
-if (get_option('woocommerce_force_ssl_checkout')=='yes') add_action( 'wp', 'woocommerce_force_ssl');
+if (!is_admin() && get_option('woocommerce_force_ssl_checkout')=='yes') add_action( 'wp', 'woocommerce_force_ssl');
 
 function woocommerce_force_ssl() {
 	if (is_checkout() && !is_ssl()) :
 		wp_safe_redirect( str_replace('http:', 'https:', get_permalink(get_option('woocommerce_checkout_page_id'))), 301 );
 		exit;
-	/*// Break out of SSL if we leave the checkout
-	elseif (is_ssl() && $_SERVER['REQUEST_URI'] && !is_checkout() && (is_cart() || is_single() || is_archive() || is_product() || is_shop() || is_home() || is_front_page() || is_tax() || is_404() || is_account_page())) :
+	// Break out of SSL if we leave the checkout (anywhere but thanks page)
+	elseif (get_option('woocommerce_unforce_ssl_checkout')=='yes' && is_ssl() && $_SERVER['REQUEST_URI'] && !is_checkout() && !is_page(get_option('woocommerce_thanks_page_id')) && !is_ajax()) :
 		wp_safe_redirect( str_replace('https:', 'http:', home_url($_SERVER['REQUEST_URI']) ) );
-		exit;*/
+		exit;
 	endif;
 }
 
@@ -456,62 +462,6 @@ function woocommerce_price( $price, $args = array() ) {
 	if ($ex_tax_label && get_option('woocommerce_calc_taxes')=='yes') $return .= ' <small>'.$woocommerce->countries->ex_tax_or_vat().'</small>';
 	
 	return $return;
-}
-
-/**
- * Variation Formatting
- *
- * Gets a formatted version of variation data or item meta
- **/
-function woocommerce_get_formatted_variation( $variation = '', $flat = false ) {
-
-	global $woocommerce;
-	
-	if ($variation && is_array($variation)) :
-		
-		$return = '';
-		
-		if (!$flat) :
-			$return = '<dl class="variation">';
-		endif;
-		
-		$variation_list = array();
-		
-		foreach ($variation as $name => $value) :
-			
-			if (!$value) continue;
-			
-			// If this is a term slug, get the term's nice name
-            if (taxonomy_exists(esc_attr(str_replace('attribute_', '', $name)))) :
-            	$term = get_term_by('slug', $value, esc_attr(str_replace('attribute_', '', $name)));
-            	if (!is_wp_error($term) && $term->name) :
-            		$value = $term->name;
-            	endif;
-            else :
-            	$value = ucfirst($value);
-            endif;
-			
-			if ($flat) :
-				$variation_list[] = $woocommerce->attribute_label(str_replace('attribute_', '', $name)).': '.$value;
-			else :
-				$variation_list[] = '<dt>'.$woocommerce->attribute_label(str_replace('attribute_', '', $name)).':</dt><dd>'.$value.'</dd>';
-			endif;
-			
-		endforeach;
-		
-		if ($flat) :
-			$return .= implode(', ', $variation_list);
-		else :
-			$return .= implode('', $variation_list);
-		endif;
-		
-		if (!$flat) :
-			$return .= '</dl>';
-		endif;
-		
-		return $return;
-		
-	endif;
 }	
 	
 /**
@@ -708,3 +658,54 @@ if (!function_exists('woocommerce_light_or_dark')) {
 	}
 }
 
+<<<<<<< HEAD
+=======
+/**
+ * Variation Formatting
+ *
+ * Gets a formatted version of variation data or item meta
+ **/
+function woocommerce_get_formatted_variation( $variation = '', $flat = false ) {
+	global $woocommerce;
+
+	if (is_array($variation)) :
+
+		if (!$flat) $return = '<dl class="variation">'; else $return = '';
+
+		$variation_list = array();
+
+		foreach ($variation as $name => $value) :
+
+			if (!$value) continue;
+
+			// If this is a term slug, get the term's nice name
+            if (taxonomy_exists(esc_attr(str_replace('attribute_', '', $name)))) :
+            	$term = get_term_by('slug', $value, esc_attr(str_replace('attribute_', '', $name)));
+            	if (!is_wp_error($term) && $term->name) :
+            		$value = $term->name;
+            	endif;
+            else :
+            	$value = ucfirst($value);
+            endif;
+
+			if ($flat) :
+				$variation_list[] = $woocommerce->attribute_label(str_replace('attribute_', '', $name)).': '.$value;
+			else :
+				$variation_list[] = '<dt>'.$woocommerce->attribute_label(str_replace('attribute_', '', $name)).':</dt><dd>'.$value.'</dd>';
+			endif;
+
+		endforeach;
+
+		if ($flat) :
+			$return .= implode(', ', $variation_list);
+		else :
+			$return .= implode('', $variation_list);
+		endif;
+
+		if (!$flat) $return .= '</dl>';
+
+		return $return;
+
+	endif;
+}
+>>>>>>> ce55dfacf39d9839b17612ca8d9d1a22b1ac1e5e
