@@ -753,8 +753,5 @@ function woocommerce_get_formatted_variation( $variation = '', $flat = false ) {
 		return $return;
 
 	endif;
-}rn $return;
-
-	endif;
 }
->>>>>>> ce55dfacf39d9839b17612ca8d9d1a22b1ac1e5e
+
