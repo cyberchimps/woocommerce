@@ -32,13 +32,55 @@ class woocommerce_paypal extends woocommerce_payment_gateway {
 		$this->email 		= $this->settings['email'];
 		$this->testmode		= $this->settings['testmode'];		
 		$this->send_shipping = $this->settings['send_shipping'];
+		$this->debug		= $this->settings['debug'];	
 		
 		// Actions
 		add_action( 'init', array(&$this, 'check_ipn_response') );
 		add_action('valid-paypal-standard-ipn-request', array(&$this, 'successful_request') );
 		add_action('woocommerce_receipt_paypal', array(&$this, 'receipt_page'));
 		add_action('woocommerce_update_options_payment_gateways', array(&$this, 'process_admin_options'));
+		
+		if ( !$this->is_valid_for_use() ) $this->enabled = false;
     } 
+    
+     /**
+     * Check if this gateway is enabled and available in the user's country
+     */
+    function is_valid_for_use() {
+        if (!in_array(get_option('woocommerce_currency'), array('AUD', 'BRL', 'CAD', 'MXN', 'NZD', 'HKD', 'SGD', 'USD', 'EUR', 'JPY', 'TRY', 'NOK', 'CZK', 'DKK', 'HUF', 'ILS', 'MYR', 'PHP', 'PLN', 'SEK', 'CHF', 'TWD', 'THB', 'GBP'))) return false;
+
+        return true;
+    }
+    
+	/**
+	 * Admin Panel Options 
+	 * - Options for bits like 'title' and availability on a country-by-country basis
+	 *
+	 * @since 1.0.0
+	 */
+	public function admin_options() {
+
+    	?>
+    	<h3><?php _e('PayPal standard', 'woothemes'); ?></h3>
+    	<p><?php _e('PayPal standard works by sending the user to PayPal to enter their payment information.', 'woothemes'); ?></p>
+    	<table class="form-table">
+    	<?php
+    		if ( $this->is_valid_for_use() ) :
+    	
+    			// Generate the HTML For the settings form.
+    			$this->generate_settings_html();
+    		
+    		else :
+    		
+    			?>
+            		<div class="inline error"><p><strong><?php _e( 'Gateway Disabled', 'woothemes' ); ?></strong>: <?php _e( 'PayPal does not support your store currency.', 'woocommerce' ); ?></p></div>
+        		<?php
+        		
+    		endif;
+    	?>
+		</table><!--/.form-table-->
+    	<?php
+    } // End admin_options()
     
 	/**
      * Initialise Gateway Settings Form Fields
@@ -81,30 +123,16 @@ class woocommerce_paypal extends woocommerce_payment_gateway {
 							'type' => 'checkbox', 
 							'label' => __( 'Enable PayPal sandbox', 'woothemes' ), 
 							'default' => 'yes'
+						),
+			'debug' => array(
+							'title' => __( 'Debug', 'woothemes' ), 
+							'type' => 'checkbox', 
+							'label' => __( 'Enable logging (<code>woocommerce/logs/paypal.txt</code>)', 'woothemes' ), 
+							'default' => 'no'
 						)
 			);
     
     } // End init_form_fields()
-    
-	/**
-	 * Admin Panel Options 
-	 * - Options for bits like 'title' and availability on a country-by-country basis
-	 *
-	 * @since 1.0.0
-	 */
-	public function admin_options() {
-
-    	?>
-    	<h3><?php _e('PayPal standard', 'woothemes'); ?></h3>
-    	<p><?php _e('PayPal standard works by sending the user to PayPal to enter their payment information.', 'woothemes'); ?></p>
-    	<table class="form-table">
-    	<?php
-    		// Generate the HTML For the settings form.
-    		$this->generate_settings_html();
-    	?>
-		</table><!--/.form-table-->
-    	<?php
-    } // End admin_options()
     
     /**
 	 * There are no payment fields for paypal, but we want to show the description if set.
@@ -126,6 +154,8 @@ class woocommerce_paypal extends woocommerce_payment_gateway {
 		else :
 			$paypal_adr = $this->liveurl . '?';		
 		endif;
+		
+		if ($this->debug=='yes') $woocommerce->log->add( 'paypal', 'Generating payment form for order #' . $order_id . '. Notify URL: ' . trailingslashit(home_url()).'?paypalListener=paypal_standard_IPN');
 		
 		$shipping_name = explode(' ', $order->shipping_method);
 		
@@ -157,13 +187,12 @@ class woocommerce_paypal extends woocommerce_payment_gateway {
 				'upload' 				=> 1,
 				'return' 				=> $this->get_return_url( $order ),
 				'cancel_return'			=> $order->get_cancel_order_url(),
-				//'cancel_return'			=> home_url(),
 				
 				// Order key
 				'custom'				=> $order_id,
 				
 				// IPN
-				'notify_url'			=> trailingslashit(get_bloginfo('wpurl')).'?paypalListener=paypal_standard_IPN',
+				'notify_url'			=> trailingslashit(home_url()).'?paypalListener=paypal_standard_IPN',
 				
 				// Address info
 				'first_name'			=> $order->billing_first_name,
@@ -179,8 +208,7 @@ class woocommerce_paypal extends woocommerce_payment_gateway {
 	
 				// Payment Info
 				'invoice' 				=> $order->order_key,
-				'tax_cart'				=> $order->get_total_tax(),
-				'discount_amount_cart' 	=> $order->order_discount
+				'discount_amount_cart' 	=> $order->get_total_discount()
 			), 
 			$phone_args
 		);
@@ -190,6 +218,12 @@ class woocommerce_paypal extends woocommerce_payment_gateway {
 			$paypal_args['address_override'] = 1;
 		else :
 			$paypal_args['no_shipping'] = 1;
+		endif;
+		
+		if (get_option('woocommerce_prices_include_tax')=='yes') :
+			// Don't pass - paypal borks tax due to prices including tax. PayPal has no option for tax inclusive pricing.
+		else :
+			$paypal_args['tax_cart'] = $order->get_total_tax();
 		endif;
 		
 		// Cart Contents
@@ -206,18 +240,34 @@ class woocommerce_paypal extends woocommerce_payment_gateway {
 					$item_name .= ' ('.$meta.')';
 				endif;
 				
-				$paypal_args['item_name_'.$item_loop] = $item_name;
-				$paypal_args['quantity_'.$item_loop] = $item['qty'];
-				$paypal_args['amount_'.$item_loop] = $item['cost'];
+				if (get_option('woocommerce_prices_include_tax')=='yes') :
+					
+					// Since prices include tax we cannot send lines, otherwise we will get rounding errors when paypal re-calcs the totals
+					// Paypal also incorrectly calculates discounts when prices are tax inclusive because coupons are removed from the tax inclusive price
+					$paypal_args['item_name_'.$item_loop] = $item['qty'] . ' x ' . $item_name;
+					$paypal_args['quantity_'.$item_loop] = 1;
+					
+					// Add tax to this cost for paypal for the entire row to prevent rounding issues
+					$paypal_args['amount_'.$item_loop] = number_format( ($item['cost'] * $item['qty']) * (1 + ($item['taxrate']/100)) , 2, '.', '');
+					
+				else :
+					
+					$paypal_args['item_name_'.$item_loop] = $item_name;
+					$paypal_args['quantity_'.$item_loop] = $item['qty'];
+					$paypal_args['amount_'.$item_loop] = number_format($item['cost'], 2, '.', '');
+					
+				endif;
 				
 			endif;
 		endforeach; endif;
 		
 		// Shipping Cost
-		$item_loop++;
-		$paypal_args['item_name_'.$item_loop] = __('Shipping cost', 'woothemes');
-		$paypal_args['quantity_'.$item_loop] = '1';
-		$paypal_args['amount_'.$item_loop] = number_format($order->order_shipping, 2);
+		if ($order->order_shipping>0) :
+			$item_loop++;
+			$paypal_args['item_name_'.$item_loop] = __('Shipping cost', 'woothemes');
+			$paypal_args['quantity_'.$item_loop] = '1';
+			$paypal_args['amount_'.$item_loop] = number_format($order->order_shipping, 2);
+		endif;
 		
 		$paypal_args_array = array();
 
@@ -284,6 +334,9 @@ class woocommerce_paypal extends woocommerce_payment_gateway {
 	 * Check PayPal IPN validity
 	 **/
 	function check_ipn_request_is_valid() {
+		global $woocommerce;
+		
+		if ($this->debug=='yes') $woocommerce->log->add( 'paypal', 'Checking IPN response is valid...' );
     
     	 // Add cmd to the post array
         $_POST['cmd'] = '_notify-validate';
@@ -309,8 +362,16 @@ class woocommerce_paypal extends woocommerce_payment_gateway {
         
         // check to see if the request was valid
         if ( !is_wp_error($response) && $response['response']['code'] >= 200 && $response['response']['code'] < 300 && (strcmp( $response['body'], "VERIFIED") == 0)) {
+            if ($this->debug=='yes') $woocommerce->log->add( 'paypal', 'Received valid response from PayPal' );
             return true;
         } 
+        
+        if ($this->debug=='yes') :
+        	$woocommerce->log->add( 'paypal', 'Received invalid response from PayPal' );
+        	if (is_wp_error($response)) :
+        		$woocommerce->log->add( 'paypal', 'Error response: ' . $result->get_error_message() );
+        	endif;
+        endif;
         
         return false;
     }
@@ -340,39 +401,53 @@ class woocommerce_paypal extends woocommerce_payment_gateway {
 	function successful_request( $posted ) {
 		
 		// Custom holds post ID
-	    if ( !empty($posted['txn_type']) && !empty($posted['invoice']) ) {
+	    if ( !empty($posted['custom']) && !empty($posted['invoice']) ) {
 	
-	        $accepted_types = array('cart', 'instant', 'express_checkout', 'web_accept', 'masspay', 'send_money');
-	
-	        if (!in_array(strtolower($posted['txn_type']), $accepted_types)) exit;
-			
 			$order = new woocommerce_order( (int) $posted['custom'] );
-	
 	        if ($order->order_key!==$posted['invoice']) exit;
 	        
 	        // Sandbox fix
 	        if ($posted['test_ipn']==1 && $posted['payment_status']=='Pending') $posted['payment_status'] = 'completed';
-	        			
-			if ($order->status !== 'completed') :
-		        // We are here so lets check status and do actions
-		        switch (strtolower($posted['payment_status'])) :
-		            case 'completed' :
-		            	// Payment completed
-		                $order->add_order_note( __('IPN payment completed', 'woothemes') );
-		                $order->payment_complete();
-		            break;
-		            case 'denied' :
-		            case 'expired' :
-		            case 'failed' :
-		            case 'voided' :
-		                // Order failed
-		                $order->update_status('failed', sprintf(__('Payment %s via IPN.', 'woothemes'), strtolower($posted['payment_status']) ) );
-		            break;
-		            default:
-		            	// No action
-		            break;
-		        endswitch;
-			endif;
+	        
+	        // We are here so lets check status and do actions
+	        switch (strtolower($posted['payment_status'])) :
+	            case 'completed' :
+	            	
+	            	// Check order not already completed
+	            	if ($order->status == 'completed') exit;
+	            	
+	            	// Check valid txn_type
+	            	$accepted_types = array('cart', 'instant', 'express_checkout', 'web_accept', 'masspay', 'send_money');
+					if (!in_array(strtolower($posted['txn_type']), $accepted_types)) exit;
+	            	
+	            	// Payment completed
+	                $order->add_order_note( __('IPN payment completed', 'woothemes') );
+	                $order->payment_complete();
+	                
+	                // Store PP Details
+	                update_post_meta( (int) $posted['custom'], 'Payer PayPal address', $posted['payer_email']);
+	                update_post_meta( (int) $posted['custom'], 'Transaction ID', $posted['txn_id']);
+	                update_post_meta( (int) $posted['custom'], 'Payer first name', $posted['first_name']);
+	                update_post_meta( (int) $posted['custom'], 'Payer last name', $posted['last_name']);
+	                update_post_meta( (int) $posted['custom'], 'Payment type', $posted['payment_type']); 
+	                
+	            break;
+	            case 'denied' :
+	            case 'expired' :
+	            case 'failed' :
+	            case 'voided' :
+	                // Order failed
+	                $order->update_status('failed', sprintf(__('Payment %s via IPN.', 'woothemes'), strtolower($posted['payment_status']) ) );
+	            break;
+	            case "refunded" :
+	            case "reversed" :
+	            	// Mark order as refunded
+	            	$order->update_status('refunded', sprintf(__('Payment %s via IPN.', 'woothemes'), strtolower($posted['payment_status']) ) );
+	            break;
+	            default:
+	            	// No action
+	            break;
+	        endswitch;
 			
 			exit;
 			

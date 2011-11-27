@@ -34,8 +34,8 @@ function woocommerce_admin_menu() {
 	
 	if ( current_user_can( 'manage_woocommerce' ) ) $menu[] = array( '', 'read', 'separator-woocommerce', '', 'wp-menu-separator woocommerce' );
 	
-    add_menu_page(__('WooCommerce', 'woothemes'), __('WooCommerce', 'woothemes'), 'manage_woocommerce', 'woocommerce' , 'woocommerce_settings', $woocommerce->plugin_url() . '/assets/images/icons/menu_icons.png', 55);
-    add_submenu_page('woocommerce', __('General Settings', 'woothemes'),  __('Settings', 'woothemes') , 'manage_woocommerce', 'woocommerce', 'woocommerce_settings');
+    add_menu_page(__('WooCommerce', 'woothemes'), __('WooCommerce', 'woothemes'), 'manage_woocommerce', 'woocommerce' , 'woocommerce_settings', $woocommerce->plugin_url() . '/assets/images/icons/menu_icon_wc.png', 55);
+    add_submenu_page('woocommerce', __('WooCommerce Settings', 'woothemes'),  __('Settings', 'woothemes') , 'manage_woocommerce', 'woocommerce', 'woocommerce_settings');
     add_submenu_page('woocommerce', __('Reports', 'woothemes'),  __('Reports', 'woothemes') , 'manage_woocommerce', 'woocommerce_reports', 'woocommerce_reports');
     add_submenu_page('edit.php?post_type=product', __('Attributes', 'woothemes'), __('Attributes', 'woothemes'), 'manage_categories', 'woocommerce_attributes', 'woocommerce_attributes');
     
@@ -57,6 +57,7 @@ function woocommerce_admin_scripts() {
 	wp_register_script( 'woocommerce_admin', $woocommerce->plugin_url() . '/assets/js/admin/woocommerce_admin'.$suffix.'.js', array('jquery', 'jquery-ui-widget', 'jquery-ui-core'), '1.0' );
 	wp_register_script( 'jquery-ui-datepicker',  $woocommerce->plugin_url() . '/assets/js/admin/ui-datepicker.js', array('jquery','jquery-ui-core'), '1.0' );
 	wp_register_script( 'woocommerce_writepanel', $woocommerce->plugin_url() . '/assets/js/admin/write-panels'.$suffix.'.js', array('jquery', 'jquery-ui-datepicker') );
+	wp_register_script( 'chosen', $woocommerce->plugin_url() . '/assets/js/chosen.jquery'.$suffix.'.js', array('jquery'), '1.0' );
 	
 	// Get admin screen id
     $screen = get_current_screen();
@@ -66,6 +67,7 @@ function woocommerce_admin_scripts() {
     
     	wp_enqueue_script( 'woocommerce_admin' );
     	wp_enqueue_script('farbtastic');
+    	wp_enqueue_script('chosen');
 
     endif;
     
@@ -86,12 +88,16 @@ function woocommerce_admin_scripts() {
 		wp_enqueue_script( 'jquery-ui-datepicker' );
 		wp_enqueue_script( 'media-upload' );
 		wp_enqueue_script( 'thickbox' );
+		wp_enqueue_script('chosen');
 		
 		$woocommerce_witepanel_params = array( 
 			'remove_item_notice' 			=>  __("Remove this item? If you have previously reduced this item's stock, or this order was submitted by a customer, will need to manually restore the item's stock.", 'woothemes'),
-			'cart_total' 					=> __("Calc totals based on order items, discount amount, and shipping?", 'woothemes'),
+			'cart_total' 					=> __("Calculate totals based on order items, discount amount, and shipping? Note, you will need to calculate discounts before tax manually.", 'woothemes'),
 			'copy_billing' 					=> __("Copy billing information to shipping information? This will remove any currently entered shipping information.", 'woothemes'),
+			'load_billing' 					=> __("Load the customer's billing information? This will remove any currently entered billing information.", 'woothemes'),
+			'load_shipping' 				=> __("Load the customer's shipping information? This will remove any currently entered shipping information.", 'woothemes'),
 			'prices_include_tax' 			=> get_option('woocommerce_prices_include_tax'),
+			'round_at_subtotal'				=> get_option( 'woocommerce_tax_round_at_subtotal' ),
 			'ID' 							=>  __('ID', 'woothemes'),
 			'item_name' 					=> __('Item Name', 'woothemes'),
 			'quantity' 						=> __('Quantity e.g. 2', 'woothemes'),
@@ -100,9 +106,11 @@ function woocommerce_admin_scripts() {
 			'meta_name'						=> __('Meta Name', 'woothemes'),
 			'meta_value'					=> __('Meta Value', 'woothemes'),
 			'select_terms'					=> __('Select terms', 'woothemes'),
+			'no_customer_selected'			=> __('No customer selected', 'woothemes'),
 			'plugin_url' 					=> $woocommerce->plugin_url(),
 			'ajax_url' 						=> admin_url('admin-ajax.php'),
 			'add_order_item_nonce' 			=> wp_create_nonce("add-order-item"),
+			'get_customer_details_nonce' 	=> wp_create_nonce("get-customer-details"),
 			'upsell_crosssell_search_products_nonce' => wp_create_nonce("search-products"),
 			'calendar_image'				=> $woocommerce->plugin_url().'/assets/images/calendar.png',
 			'post_id'						=> $post->ID
@@ -138,7 +146,6 @@ function woocommerce_admin_scripts() {
 	endif;
 }
 add_action('admin_enqueue_scripts', 'woocommerce_admin_scripts');
-
 
 /**
  * Queue admin CSS
@@ -210,14 +217,6 @@ function woocommerce_admin_head() {
 	if ( !current_user_can( 'manage_woocommerce' ) ) return false;
 	?>
 	<style type="text/css">
-		#toplevel_page_woocommerce .wp-menu-image{background:url(<?php echo $woocommerce->plugin_url(); ?>/assets/images/icons/menu_icons.png) no-repeat 0px -32px !important;}
-		#toplevel_page_woocommerce .wp-menu-image img{display:none;}
-		#toplevel_page_woocommerce:hover .wp-menu-image,#toplevel_page_woocommerce.wp-has-current-submenu .wp-menu-image{background:url(<?php echo $woocommerce->plugin_url(); ?>/assets/images/icons/menu_icons.png) no-repeat 0px 0px !important;}
-		#menu-posts-product .wp-menu-image{background:url(<?php echo $woocommerce->plugin_url(); ?>/assets/images/icons/menu_icons.png) no-repeat -35px -32px !important;}
-		#menu-posts-product:hover .wp-menu-image,#menu-posts-product.wp-has-current-submenu .wp-menu-image{background:url(<?php echo $woocommerce->plugin_url(); ?>/assets/images/icons/menu_icons.png) no-repeat -35px 0px !important;}
-		#menu-posts-shop_order .wp-menu-image{background:url(<?php echo $woocommerce->plugin_url(); ?>/assets/images/icons/menu_icons.png) no-repeat -70px -32px !important;}
-		#menu-posts-shop_order:hover .wp-menu-image,#menu-posts-shop_order.wp-has-current-submenu .wp-menu-image{background:url(<?php echo $woocommerce->plugin_url(); ?>/assets/images/icons/menu_icons.png) no-repeat -70px 0px !important;}
-		
 		<?php if ( isset($_GET['taxonomy']) && $_GET['taxonomy']=='product_cat' ) : ?>
 			.icon32-posts-product { background-position: -243px -5px !important; }
 		<?php elseif ( isset($_GET['taxonomy']) && $_GET['taxonomy']=='product_tag' ) : ?>
@@ -469,30 +468,28 @@ function woocommerce_delete_product_sync( $id ) {
 
 /**
  * Directory for uploads
- * 
  */
 add_filter('upload_dir', 'woocommerce_downloads_upload_dir');
 
 function woocommerce_downloads_upload_dir( $pathdata ) {
-	
-	if (isset($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER']) :
+
+	if (isset($_POST['type']) && $_POST['type'] == 'downloadable_product') :
 		
-		$args = wp_parse_args( $_SERVER['HTTP_REFERER'] );
-		extract( $args, EXTR_SKIP );
-		
-		if ($from =='wc01') :
-			
-			// Uploading a downloadable file
-			$subdir = '/woocommerce_uploads'.$pathdata['subdir'];
-		 	$pathdata['path'] = str_replace($pathdata['subdir'], $subdir, $pathdata['path']);
-		 	$pathdata['url'] = str_replace($pathdata['subdir'], $subdir, $pathdata['url']);
-			$pathdata['subdir'] = str_replace($pathdata['subdir'], $subdir, $pathdata['subdir']);
-			return $pathdata;
-			
-		endif;
+		// Uploading a downloadable file
+		$subdir = '/woocommerce_uploads'.$pathdata['subdir'];
+	 	$pathdata['path'] = str_replace($pathdata['subdir'], $subdir, $pathdata['path']);
+	 	$pathdata['url'] = str_replace($pathdata['subdir'], $subdir, $pathdata['url']);
+		$pathdata['subdir'] = str_replace($pathdata['subdir'], $subdir, $pathdata['subdir']);
+		return $pathdata;
 		
 	endif;
 	
 	return $pathdata;
 
+}
+
+add_action('media_upload_downloadable_product', 'woocommerce_media_upload_downloadable_product');
+
+function woocommerce_media_upload_downloadable_product() {
+	do_action('media_upload_file');
 }

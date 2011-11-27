@@ -24,7 +24,15 @@ function woocommerce_cart( $atts ) {
 	
 		$coupon_code = stripslashes(trim($_POST['coupon_code']));
 		$woocommerce->cart->add_discount($coupon_code);
-
+	
+	// Remvoe Discount Codes
+	elseif (isset($_GET['remove_discounts'])) :
+		
+		$woocommerce->cart->remove_coupons( $_GET['remove_discounts'] );
+		
+		// Re-calc price
+		$woocommerce->cart->calculate_totals();
+	
 	// Update Shipping
 	elseif (isset($_POST['calc_shipping']) && $_POST['calc_shipping'] && $woocommerce->verify_nonce('cart')) :
 		
@@ -59,7 +67,7 @@ function woocommerce_cart( $atts ) {
 			$woocommerce->add_message(  __('Shipping costs updated.', 'woothemes') );
 			
 		endif;
-			
+
 	endif;
 	
 	do_action('woocommerce_check_cart_items');
@@ -110,12 +118,24 @@ function woocommerce_cart( $atts ) {
 									echo $woocommerce->cart->get_item_data( $values );
                        				
                        				// Backorder notification
-                       				if ($_product->backorders_require_notification() && $_product->total_stock<1) echo '<p class="backorder_notification">'.__('Available on backorder.', 'woothemes').'</p>';
+                       				if ($_product->backorders_require_notification() && $_product->get_total_stock()<1) echo '<p class="backorder_notification">'.__('Available on backorder.', 'woothemes').'</p>';
 								?>
 							</td>
-							<td class="product-price"><?php echo woocommerce_price($_product->get_price()); ?></td>
+							<td class="product-price"><?php 
+							
+								if (get_option('woocommerce_display_cart_prices_excluding_tax')=='yes') :
+									echo woocommerce_price( $_product->get_price_excluding_tax() ); 
+								else :
+									echo woocommerce_price( $_product->get_price() ); 
+								endif;
+								
+							?></td>
 							<td class="product-quantity"><div class="quantity"><input name="cart[<?php echo $cart_item_key; ?>][qty]" value="<?php echo esc_attr( $values['quantity'] ); ?>" size="4" title="Qty" class="input-text qty text" maxlength="12" /></div></td>
-							<td class="product-subtotal"><?php echo woocommerce_price($_product->get_price()*$values['quantity']); ?></td>
+							<td class="product-subtotal"><?php 
+
+								echo $woocommerce->cart->get_product_subtotal( $_product, $values['quantity'] )	;
+														
+							?></td>
 						</tr>
 						<?php
 					endif;

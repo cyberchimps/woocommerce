@@ -235,7 +235,7 @@ class woocommerce_tax {
 	 */
 	function calc_tax( $price, $rate, $price_includes_tax = true ) {
 
-		$price = round($price * 100, 0);	// To avoid float rounding errors, work with integers (pence)
+		$price = $price * 100;	// To avoid float rounding errors, work with integers (pence)
 
 		if ($price_includes_tax) :
 
@@ -246,10 +246,11 @@ class woocommerce_tax {
 			$tax_amount = $price * ($rate/100);
 		endif;
 
-		$tax_amount = round($tax_amount);	// Round to the nearest pence
 		$tax_amount = $tax_amount / 100; 	// Back to pounds
 		
-		return number_format($tax_amount, 2, '.', '');
+		return $tax_amount; // Return unrounded
+		
+		//return number_format($tax_amount, 2, '.', '');
 	}
 	
 	/**

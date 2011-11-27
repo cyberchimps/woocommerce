@@ -3,7 +3,7 @@
 Plugin Name: WooCommerce
 Plugin URI: http://www.woothemes.com/woocommerce/
 Description: An eCommerce plugin for wordpress.
-Version: 1.2.1
+Version: 1.2.4
 Author: WooThemes
 Author URI: http://woothemes.com
 Requires at least: 3.1
@@ -28,7 +28,7 @@ endif;
  * Constants
  **/ 
 if (!defined('WOOCOMMERCE_TEMPLATE_URL')) define('WOOCOMMERCE_TEMPLATE_URL', 'woocommerce/');
-if (!defined("WOOCOMMERCE_VERSION")) define("WOOCOMMERCE_VERSION", "1.2.1");	
+if (!defined("WOOCOMMERCE_VERSION")) define("WOOCOMMERCE_VERSION", "1.2.4");	
 if (!defined("PHP_EOL")) define("PHP_EOL", "\r\n");
 
 /**
@@ -72,6 +72,7 @@ include_once( 'classes/product_variation.class.php' );
 include_once( 'classes/tax.class.php' );
 include_once( 'classes/validation.class.php' ); 
 include_once( 'classes/woocommerce_query.class.php' );
+include_once( 'classes/woocommerce_logger.class.php' );
 include_once( 'classes/woocommerce.class.php' );
 
 /**
@@ -115,9 +116,6 @@ function woocommerce_init() {
 	add_image_size( 'shop_catalog', $woocommerce->get_image_size('shop_catalog_image_width'), $woocommerce->get_image_size('shop_catalog_image_height'), $shop_catalog_crop );
 	add_image_size( 'shop_single', $woocommerce->get_image_size('shop_single_image_width'), $woocommerce->get_image_size('shop_single_image_height'), $shop_single_crop );
 
-	// Include template functions here so they are pluggable by themes
-	include_once( 'woocommerce_template_functions.php' );
-	
 	$suffix = defined('SCRIPT_DEBUG') && SCRIPT_DEBUG ? '' : '.min';
 	
     if (!is_admin()) :
@@ -134,7 +132,19 @@ function woocommerce_init() {
 }
 
 /**
- * Init WooCommerce
+ * Init WooCommerce Tempalte Functions
+ *
+ * This makes them pluggable by plugins and themes
+ **/
+add_action('init', 'include_template_functions', 99);
+
+function include_template_functions() {
+	include_once( 'woocommerce_template_functions.php' );
+}
+
+
+/**
+ * Init WooCommerce Thumbnails after theme setup
  **/
 add_action('after_setup_theme', 'woocommerce_init_post_thumbnails');
 
@@ -144,9 +154,19 @@ function woocommerce_init_post_thumbnails() {
 		add_theme_support( 'post-thumbnails' );
 		remove_post_type_support( 'post', 'thumbnail' );
 		remove_post_type_support( 'page', 'thumbnail' );
+	else :
+		add_post_type_support( 'product', 'thumbnail' );
 	endif;
 }
 
+/**
+ * Output generator to aid debugging
+ **/
+add_action('wp_head', 'woocommerce_generator');
+
+function woocommerce_generator() {
+	echo "\n\n" . '<!-- WooCommerce Version -->' . "\n" . '<meta name="generator" content="WooCommerce ' . WOOCOMMERCE_VERSION . '" />' . "\n\n";
+}
 
 /**
  * Set up Roles & Capabilities
@@ -224,14 +244,17 @@ function woocommerce_frontend_scripts() {
 	if (get_option('woocommerce_enable_lightbox')=='yes') wp_enqueue_script('fancybox');
     	
 	/* Script variables */
+	$states = json_encode( $woocommerce->countries->states );
+	$states = (mb_detect_encoding($states, "UTF-8") == "UTF-8") ? $states : utf8_encode($states);
+	
 	$woocommerce_params = array(
 		'currency_symbol' 				=> get_woocommerce_currency_symbol(),
 		'currency_pos'           		=> get_option('woocommerce_currency_pos'), 
-		'countries' 					=> json_encode($woocommerce->countries->states),
+		'countries' 					=> $states,
 		'select_state_text' 			=> __('Select a state&hellip;', 'woothemes'),
 		'state_text' 					=> __('state', 'woothemes'),
 		'plugin_url' 					=> $woocommerce->plugin_url(),
-		'ajax_url' 						=> admin_url('admin-ajax.php'),
+		'ajax_url' 						=> (!is_ssl()) ? str_replace('https', 'http', admin_url('admin-ajax.php')) : admin_url('admin-ajax.php'),
 		'get_variation_nonce' 			=> wp_create_nonce("get-variation"),
 		'add_to_cart_nonce' 			=> wp_create_nonce("add-to-cart"),
 		'update_order_review_nonce' 	=> wp_create_nonce("update-order-review"),
@@ -408,13 +431,14 @@ function get_woocommerce_currency_symbol() {
 		case 'EUR' : $currency_symbol = '&euro;'; break;
 		case 'JPY' : $currency_symbol = '&yen;'; break;
 		case 'TRY' : $currency_symbol = 'TL'; break;
+		case 'NOK' : $currency_symbol = 'kr'; break;
+		case 'ZAR' : $currency_symbol = 'R'; break;
 		
 		case 'CZK' :
 		case 'DKK' :
 		case 'HUF' :
 		case 'ILS' :
 		case 'MYR' :
-		case 'NOK' :
 		case 'PHP' :
 		case 'PLN' :
 		case 'SEK' :
@@ -506,23 +530,26 @@ add_filter('preprocess_comment', 'woocommerce_check_comment_rating', 0);
 function woocommerce_comments($comment, $args, $depth) {
 	$GLOBALS['comment'] = $comment; global $post; ?>
 	
-	<li <?php comment_class(); ?> id="li-comment-<?php comment_ID() ?>">
+	<li itemprop="reviews" itemscope itemtype="http://schema.org/Review" <?php comment_class(); ?> id="li-comment-<?php comment_ID() ?>">
 		<div id="comment-<?php comment_ID(); ?>" class="comment_container">
 
   			<?php echo get_avatar( $comment, $size='60' ); ?>
 			
 			<div class="comment-text">
-				<div class="star-rating" title="<?php echo esc_attr( get_comment_meta( $comment->comment_ID, 'rating', true ) ); ?>">
-					<span style="width:<?php echo get_comment_meta( $comment->comment_ID, 'rating', true )*16; ?>px"><?php echo get_comment_meta( $comment->comment_ID, 'rating', true ); ?> <?php _e('out of 5', 'woothemes'); ?></span>
+			
+				<div itemprop="reviewRating" itemscope itemtype="http://schema.org/Rating" class="star-rating" title="<?php echo esc_attr( get_comment_meta( $comment->comment_ID, 'rating', true ) ); ?>">
+					<span style="width:<?php echo get_comment_meta( $comment->comment_ID, 'rating', true )*16; ?>px"><span itemprop="ratingValue"><?php echo get_comment_meta( $comment->comment_ID, 'rating', true ); ?></span> <?php _e('out of 5', 'woothemes'); ?></span>
 				</div>
+				
 				<?php if ($comment->comment_approved == '0') : ?>
 					<p class="meta"><em><?php _e('Your comment is awaiting approval', 'woothemes'); ?></em></p>
 				<?php else : ?>
 					<p class="meta">
-						<?php _e('Rating by', 'woothemes'); ?> <strong class="reviewer vcard"><span class="fn"><?php comment_author(); ?></span></strong> <?php _e('on', 'woothemes'); ?> <?php echo get_comment_date('M jS Y'); ?>:
+						<?php _e('Rating by', 'woothemes'); ?> <strong itemprop="author"><?php comment_author(); ?></strong> <?php _e('on', 'woothemes'); ?> <time itemprop="datePublished" time datetime="<?php echo get_comment_date('c'); ?>"><?php echo get_comment_date('M jS Y'); ?></time>:
 					</p>
 				<?php endif; ?>
-  				<div class="description"><?php comment_text(); ?></div>
+				
+  				<div itemprop="description" class="description"><?php comment_text(); ?></div>
   				<div class="clear"></div>
   			</div>
 			<div class="clear"></div>			
@@ -530,16 +557,22 @@ function woocommerce_comments($comment, $args, $depth) {
 	<?php
 }
 
+
 /**
- * Exclude order comments from front end
+ * Exclude order comments from queries
+ *
+ * This code should exclude shop_order comments from queries. Some queries (like the recent comments widget on the dashboard) are hardcoded
+ * and are not filtered, however, the code current_user_can( 'read_post', $comment->comment_post_ID ) should keep them safe since only admin and
+ * shop managers can view orders anyway.
+ *
+ * The frontend view order pages get around this filter by using remove_filter('comments_clauses', 'woocommerce_exclude_order_comments');
  **/
 function woocommerce_exclude_order_comments( $clauses ) {
+	global $wpdb, $typenow;
 	
-	global $wpdb;
+	if (is_admin() && $typenow=='shop_order') return $clauses; // Don't hide when viewing orders in admin
 	
-	$clauses['join'] = "
-		LEFT JOIN $wpdb->posts ON $wpdb->comments.comment_post_ID = $wpdb->posts.ID
-	";
+	$clauses['join'] = "LEFT JOIN $wpdb->posts ON $wpdb->comments.comment_post_ID = $wpdb->posts.ID";
 	
 	if ($clauses['where']) $clauses['where'] .= ' AND ';
 	
@@ -550,7 +583,23 @@ function woocommerce_exclude_order_comments( $clauses ) {
 	return $clauses;	
 
 }
-if (!is_admin()) add_filter('comments_clauses', 'woocommerce_exclude_order_comments');
+add_filter( 'comments_clauses', 'woocommerce_exclude_order_comments', 10, 1);
+
+
+/**
+ * Exclude order comments from comments RSS
+ **/
+function woocommerce_exclude_order_comments_from_feed( $where ) {
+	global $wpdb;
+	
+    if ($where) $where .= ' AND ';
+	
+	$where .= "$wpdb->posts.post_type NOT IN ('shop_order')";
+    
+    return $where;
+}
+add_action( 'comment_feed_where', 'woocommerce_exclude_order_comments_from_feed' );
+
 
 /**
  * readfile_chunked

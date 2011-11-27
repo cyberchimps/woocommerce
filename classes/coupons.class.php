@@ -20,6 +20,7 @@ class woocommerce_coupon {
 	var $usage_limit;
 	var $usage_count;
 	var $expiry_date;
+	var $apply_before_tax;
 	
 	/** get coupon with $code */
 	function woocommerce_coupon( $code ) {
@@ -39,6 +40,7 @@ class woocommerce_coupon {
 			$this->usage_limit 			= get_post_meta($coupon->ID, 'usage_limit', true);
 			$this->usage_count 			= (int) get_post_meta($coupon->ID, 'usage_count', true);
 			$this->expiry_date 			= ($expires = get_post_meta($coupon->ID, 'expiry_date', true)) ? strtotime($expires) : '';
+			$this->apply_before_tax 	= get_post_meta($coupon->ID, 'apply_before_tax', true);
 			
 			if (!$this->amount) return false;
 			
@@ -47,6 +49,11 @@ class woocommerce_coupon {
 		endif;
 		
 		return false;
+	}
+	
+	/** Check if coupon needs applying before tax **/
+	function apply_before_tax() {
+		if ($this->apply_before_tax=='yes') return true; else return false;
 	}
 	
 	/** Increase usage count */
@@ -62,28 +69,6 @@ class woocommerce_coupon {
 				
 		if ($this->id) :
 			
-			// Product ids
-			if (sizeof( $this->product_ids )>0) :
-				$valid = false;
-				if (sizeof($woocommerce->cart->get_cart())>0) : foreach ($woocommerce->cart->get_cart() as $cart_item_key => $cart_item) :
-					if (in_array($cart_item['product_id'], $this->product_ids) || in_array($cart_item['variation_id'], $this->product_ids)) :
-						$valid = true;
-					endif;
-				endforeach; endif;
-				if (!$valid) return false;
-			endif;
-			
-			// Exclude product ids
-			if (sizeof( $this->exclude_product_ids )>0) :
-				$valid = true;
-				if (sizeof($woocommerce->cart->get_cart())>0) : foreach ($woocommerce->cart->get_cart() as $cart_item_key => $cart_item) :
-					if (in_array($cart_item['product_id'], $this->exclude_product_ids) || in_array($cart_item['variation_id'], $this->exclude_product_ids)) :
-						$valid = false;
-					endif;
-				endforeach; endif;
-				if (!$valid) return false;
-			endif;
-			
 			if ($this->usage_limit>0) :
 				if ($this->usage_count>$this->usage_limit) :
 					return false;
@@ -94,6 +79,32 @@ class woocommerce_coupon {
 				if (strtotime('NOW')>$this->expiry_date) :
 					return false;
 				endif;
+			endif;
+			
+			// Product ids - If a product included is found in the cart then its valid
+			if (sizeof( $this->product_ids )>0) :
+				$valid = false;
+				if (sizeof($woocommerce->cart->get_cart())>0) : foreach ($woocommerce->cart->get_cart() as $cart_item_key => $cart_item) :
+					if (in_array($cart_item['product_id'], $this->product_ids) || in_array($cart_item['variation_id'], $this->product_ids)) :
+						$valid = true;
+					endif;
+				endforeach; endif;
+				if (!$valid) return false;
+			endif;
+			
+			// Cart discounts cannot be added if non-eligble product is found in cart
+			if ($this->type!='fixed_product' && $this->type!='percent_product') : 
+
+				if (sizeof( $this->exclude_product_ids )>0) :
+					$valid = true;
+					if (sizeof($woocommerce->cart->get_cart())>0) : foreach ($woocommerce->cart->get_cart() as $cart_item_key => $cart_item) :
+						if (in_array($cart_item['product_id'], $this->exclude_product_ids) || in_array($cart_item['variation_id'], $this->exclude_product_ids)) :
+							$valid = false;
+						endif;
+					endforeach; endif;
+					if (!$valid) return false;
+				endif;
+			
 			endif;
 			
 			$valid = apply_filters('woocommerce_coupon_is_valid', true, $this);

@@ -23,7 +23,7 @@ $woocommerce_settings['general'] = apply_filters('woocommerce_general_settings',
 		'name' => __( 'Base Country/Region', 'woothemes' ),
 		'desc' 		=> __( 'This is the base country for your business. Tax rates will be based on this country.', 'woothemes' ),
 		'id' 		=> 'woocommerce_default_country',
-		'css' 		=> 'min-width:175px;',
+		'css' 		=> 'min-width:300px;',
 		'std' 		=> 'GB',
 		'type' 		=> 'single_select_country'
 	),
@@ -33,10 +33,11 @@ $woocommerce_settings['general'] = apply_filters('woocommerce_general_settings',
 		'desc' 		=> __("This controls what currency prices are listed at in the catalog and which currency gateways will take payments in.", 'woothemes' ),
 		'tip' 		=> '',
 		'id' 		=> 'woocommerce_currency',
-		'css' 		=> 'min-width:175px;',
+		'css' 		=> 'min-width:300px;',
 		'std' 		=> 'GBP',
 		'type' 		=> 'select',
-		'options' => apply_filters('woocommerce_currencies', array( 
+		'class'		=> 'chosen_select',
+		'options' => array_unique(apply_filters('woocommerce_currencies', array( 
 			'USD' => __( 'US Dollars (&#36;)', 'woothemes' ),
 			'EUR' => __( 'Euros (&euro;)', 'woothemes' ),
 			'GBP' => __( 'Pounds Sterling (&pound;)', 'woothemes' ),
@@ -60,8 +61,9 @@ $woocommerce_settings['general'] = apply_filters('woocommerce_general_settings',
 			'CHF' => __( 'Swiss Franc', 'woothemes' ),
 			'TWD' => __( 'Taiwan New Dollars', 'woothemes' ),
 			'THB' => __( 'Thai Baht', 'woothemes' ), 
-			'TRY' => __( 'Turkish Lira (TL)', 'woothemes' )
-			)
+			'TRY' => __( 'Turkish Lira (TL)', 'woothemes' ),
+			'ZAR' => __( 'South African rand (R)', 'woothemes' ),
+			))
 		)
 	),	
 	
@@ -69,9 +71,10 @@ $woocommerce_settings['general'] = apply_filters('woocommerce_general_settings',
 		'name' => __( 'Allowed Countries', 'woothemes' ),
 		'desc' 		=> __( 'These are countries that you are willing to ship to.', 'woothemes' ),
 		'id' 		=> 'woocommerce_allowed_countries',
-		'css' 		=> 'min-width:175px;',
 		'std' 		=> 'all',
 		'type' 		=> 'select',
+		'class'		=> 'chosen_select',
+		'css' 		=> 'min-width:300px;',
 		'options' => array(  
 			'all'  => __( 'All Countries', 'woothemes' ),
 			'specific' => __( 'Specific Countries', 'woothemes' )			
@@ -105,6 +108,14 @@ $woocommerce_settings['general'] = apply_filters('woocommerce_general_settings',
 	),
 	
 	array(  
+		'desc' 		=> __( 'Show order comments section', 'woothemes' ),
+		'id' 		=> 'woocommerce_enable_order_comments',
+		'std' 		=> 'yes',
+		'type' 		=> 'checkbox',
+		'checkboxgroup'		=> ''
+	),
+	
+	array(  
 		'desc' 		=> __( 'Force <abbr title="Secure Sockets Layer, a computing protocol that ensures the security of data sent via the Internet by using encryption">SSL</abbr>/HTTPS (an SSL Certificate is required)', 'woothemes' ),
 		'id' 		=> 'woocommerce_force_ssl_checkout',
 		'std' 		=> 'no',
@@ -115,6 +126,31 @@ $woocommerce_settings['general'] = apply_filters('woocommerce_general_settings',
 	array(  
 		'desc' 		=> __( 'Un-force <abbr title="Secure Sockets Layer, a computing protocol that ensures the security of data sent via the Internet by using encryption">SSL</abbr>/HTTPS when leaving the checkout', 'woothemes' ),
 		'id' 		=> 'woocommerce_unforce_ssl_checkout',
+		'std' 		=> 'no',
+		'type' 		=> 'checkbox',
+		'checkboxgroup'		=> 'end'
+	),
+	
+	array(  
+		'name' => __( 'Customer Accounts', 'woothemes' ),
+		'desc' 		=> __( 'Allow unregistered users to register from the My Account page', 'woothemes' ),
+		'id' 		=> 'woocommerce_enable_myaccount_registration',
+		'std' 		=> 'no',
+		'type' 		=> 'checkbox',
+		'checkboxgroup'		=> 'start'
+	),
+	
+	array(  
+		'desc' 		=> __( 'Clear cart when logging out', 'woothemes' ),
+		'id' 		=> 'woocommerce_clear_cart_on_logout',
+		'std' 		=> 'no',
+		'type' 		=> 'checkbox',
+		'checkboxgroup'		=> ''
+	),
+	
+	array(  
+		'desc' 		=> __( 'Prevent customers from accessing WordPress admin', 'woothemes' ),
+		'id' 		=> 'woocommerce_lock_down_admin',
 		'std' 		=> 'no',
 		'type' 		=> 'checkbox',
 		'checkboxgroup'		=> 'end'
@@ -179,7 +215,7 @@ $woocommerce_settings['general'] = apply_filters('woocommerce_general_settings',
 		'id' 		=> 'woocommerce_sharethis',
 		'type' 		=> 'text',
 		'std' 		=> '',
-        'css'       => ''
+        'css' 		=> 'min-width:300px;',
 	),
 	
 	array( 'type' => 'sectionend', 'id' => 'share_this'),
@@ -191,7 +227,7 @@ $woocommerce_settings['general'] = apply_filters('woocommerce_general_settings',
 		'desc' 		=> __('Log into your google analytics account to find your ID. e.g. <code>UA-XXXXX-X</code>', 'woothemes'),
 		'id' 		=> 'woocommerce_ga_id',
 		'type' 		=> 'text',
-        'css'       => ''
+        'css' 		=> 'min-width:300px;',
 	),
 	
 	array(  
@@ -225,9 +261,10 @@ $woocommerce_settings['pages'] = apply_filters('woocommerce_page_settings', arra
 		'name' => __( 'Shop Base Page', 'woothemes' ),
 		'desc' 		=> sprintf( __( 'This sets the base page of your shop.', 'woothemes' ), '<a target="_blank" href="options-permalink.php">', '</a>' ),
 		'id' 		=> 'woocommerce_shop_page_id',
-		'css' 		=> 'min-width:175px;',
 		'type' 		=> 'single_select_page',
-		'std' 		=> ''
+		'std' 		=> '',
+		'class'		=> 'chosen_select_nostd',
+		'css' 		=> 'min-width:300px;',
 	),
 	
 	array(  
@@ -235,6 +272,7 @@ $woocommerce_settings['pages'] = apply_filters('woocommerce_page_settings', arra
 		'desc' 		=> __( 'This title to show on the shop base page. Leave blank to use the page title.', 'woothemes' ),
 		'id' 		=> 'woocommerce_shop_page_title',
 		'type' 		=> 'text',
+		'css' 		=> 'min-width:300px;',
 		'std' 		=> 'All Products' // Default value for the page title - changed in settings
 	),
 
@@ -243,10 +281,10 @@ $woocommerce_settings['pages'] = apply_filters('woocommerce_page_settings', arra
 		'desc' 		=> __( 'If you define a "Terms" page the customer will be asked if they accept them when checking out.', 'woothemes' ),
 		'tip' 		=> '',
 		'id' 		=> 'woocommerce_terms_page_id',
-		'css' 		=> 'min-width:50px;',
 		'std' 		=> '',
-		'type' 		=> 'single_select_page',
-		'args'		=> 'show_option_none=' . __('None', 'woothemes'),
+		'class'		=> 'chosen_select_nostd',
+		'css' 		=> 'min-width:300px;',
+		'type' 		=> 'single_select_page'
 	),
 	
 	array(  
@@ -295,72 +333,80 @@ $woocommerce_settings['pages'] = apply_filters('woocommerce_page_settings', arra
 		'name' => __( 'Cart Page', 'woothemes' ),
 		'desc' 		=> __( 'Page contents: [woocommerce_cart]', 'woothemes' ),
 		'id' 		=> 'woocommerce_cart_page_id',
-		'css' 		=> 'min-width:50px;',
 		'type' 		=> 'single_select_page',
-		'std' 		=> ''
+		'std' 		=> '',
+		'class'		=> 'chosen_select_nostd',
+		'css' 		=> 'min-width:300px;',
 	),
 	
 	array(  
 		'name' => __( 'Checkout Page', 'woothemes' ),
 		'desc' 		=> __( 'Page contents: [woocommerce_checkout]', 'woothemes' ),
 		'id' 		=> 'woocommerce_checkout_page_id',
-		'css' 		=> 'min-width:50px;',
 		'type' 		=> 'single_select_page',
-		'std' 		=> ''
+		'std' 		=> '',
+		'class'		=> 'chosen_select_nostd',
+		'css' 		=> 'min-width:300px;',
 	),
 	
 	array(  
 		'name' => __( 'Pay Page', 'woothemes' ),
 		'desc' 		=> __( 'Page contents: [woocommerce_pay] Parent: "Checkout"', 'woothemes' ),
 		'id' 		=> 'woocommerce_pay_page_id',
-		'css' 		=> 'min-width:50px;',
 		'type' 		=> 'single_select_page',
-		'std' 		=> ''
+		'std' 		=> '',
+		'class'		=> 'chosen_select_nostd',
+		'css' 		=> 'min-width:300px;',
 	),
 	
 	array(  
 		'name' => __('Thanks Page', 'woothemes'),
 		'desc' 		=> __( 'Page contents: [woocommerce_thankyou] Parent: "Checkout"', 'woothemes' ),
 		'id' 		=> 'woocommerce_thanks_page_id',
-		'css' 		=> 'min-width:50px;',
 		'type' 		=> 'single_select_page',
-		'std' 		=> ''
+		'std' 		=> '',
+		'class'		=> 'chosen_select_nostd',
+		'css' 		=> 'min-width:300px;',
 	),
 	
 	array(  
 		'name' => __( 'My Account Page', 'woothemes' ),
 		'desc' 		=> __( 'Page contents: [woocommerce_my_account]', 'woothemes' ),
 		'id' 		=> 'woocommerce_myaccount_page_id',
-		'css' 		=> 'min-width:50px;',
 		'type' 		=> 'single_select_page',
-		'std' 		=> ''
+		'std' 		=> '',
+		'class'		=> 'chosen_select_nostd',
+		'css' 		=> 'min-width:300px;',
 	),
 	
 	array(  
 		'name' => __( 'Edit Address Page', 'woothemes' ),
 		'desc' 		=> __( 'Page contents: [woocommerce_edit_address] Parent: "My Account"', 'woothemes' ),
 		'id' 		=> 'woocommerce_edit_address_page_id',
-		'css' 		=> 'min-width:50px;',
 		'type' 		=> 'single_select_page',
-		'std' 		=> ''
+		'std' 		=> '',
+		'class'		=> 'chosen_select_nostd',
+		'css' 		=> 'min-width:300px;',
 	),
 	
 	array(  
 		'name' => __( 'View Order Page', 'woothemes' ),
 		'desc' 		=> __( 'Page contents: [woocommerce_view_order] Parent: "My Account"', 'woothemes' ),
 		'id' 		=> 'woocommerce_view_order_page_id',
-		'css' 		=> 'min-width:50px;',
 		'type' 		=> 'single_select_page',
-		'std' 		=> ''
+		'std' 		=> '',
+		'class'		=> 'chosen_select_nostd',
+		'css' 		=> 'min-width:300px;',
 	),
 	
 	array(  
 		'name' => __( 'Change Password Page', 'woothemes' ),
 		'desc' 		=> __( 'Page contents: [woocommerce_change_password] Parent: "My Account"', 'woothemes' ),
 		'id' 		=> 'woocommerce_change_password_page_id',
-		'css' 		=> 'min-width:50px;',
 		'type' 		=> 'single_select_page',
-		'std' 		=> ''
+		'std' 		=> '',
+		'class'		=> 'chosen_select_nostd',
+		'css' 		=> 'min-width:300px;',
 	),	
 	
 	array( 'type' => 'sectionend', 'id' => 'page_options'),
@@ -419,6 +465,14 @@ $woocommerce_settings['catalog'] = apply_filters('woocommerce_catalog_settings',
 		'id' 		=> 'woocommerce_enable_dimensions',
 		'std' 		=> 'yes',
 		'type' 		=> 'checkbox',
+		'checkboxgroup'		=> ''
+	),
+	
+	array(  
+		'desc' 		=> __( 'Show weight and dimension fields in product attributes tab', 'woothemes' ),
+		'id' 		=> 'woocommerce_enable_dimension_product_attributes',
+		'std' 		=> 'yes',
+		'type' 		=> 'checkbox',
 		'checkboxgroup'		=> 'end'
 	),
 	
@@ -426,7 +480,7 @@ $woocommerce_settings['catalog'] = apply_filters('woocommerce_catalog_settings',
 		'name' => __( 'Weight Unit', 'woothemes' ),
 		'desc' 		=> __( 'This controls what unit you will define weights in.', 'woothemes' ),
 		'id' 		=> 'woocommerce_weight_unit',
-		'css' 		=> 'min-width:175px;',
+		'css' 		=> 'min-width:150px;',
 		'std' 		=> 'GBP',
 		'type' 		=> 'select',
 		'options' => array( 
@@ -439,7 +493,7 @@ $woocommerce_settings['catalog'] = apply_filters('woocommerce_catalog_settings',
 		'name' => __( 'Dimensions Unit', 'woothemes' ),
 		'desc' 		=> __( 'This controls what unit you will define lengths in.', 'woothemes' ),
 		'id' 		=> 'woocommerce_dimension_unit',
-		'css' 		=> 'min-width:175px;',
+		'css' 		=> 'min-width:150px;',
 		'std' 		=> 'GBP',
 		'type' 		=> 'select',
 		'options' => array( 
@@ -465,7 +519,7 @@ $woocommerce_settings['catalog'] = apply_filters('woocommerce_catalog_settings',
 		'desc' 		=> __( 'This controls the position of the currency symbol.', 'woothemes' ),
 		'tip' 		=> '',
 		'id' 		=> 'woocommerce_currency_pos',
-		'css' 		=> 'min-width:175px;',
+		'css' 		=> 'min-width:150px;',
 		'std' 		=> 'left',
 		'type' 		=> 'select',
 		'options' => array( 
@@ -508,7 +562,7 @@ $woocommerce_settings['catalog'] = apply_filters('woocommerce_catalog_settings',
 	
 	array( 'type' => 'sectionend', 'id' => 'pricing_options' ),
 	
-	array(	'name' => __( 'Image Options', 'woothemes' ), 'type' => 'title','desc' => __('These settings affect the actual dimensions of images in your catalog - the display on the front-end will still be affected by CSS styles.', 'woothemes'), 'id' => 'image_options' ),
+	array(	'name' => __( 'Image Options', 'woothemes' ), 'type' => 'title','desc' => sprintf(__('These settings affect the actual dimensions of images in your catalog - the display on the front-end will still be affected by CSS styles. After changing these settings you may need to <a href="%s">regenerate your thumbnails</a>.', 'woothemes'), 'http://wordpress.org/extend/plugins/regenerate-thumbnails/'), 'id' => 'image_options' ),
 	
 	array(  
 		'name' => __( 'Catalog Images', 'woothemes' ),
@@ -576,7 +630,7 @@ $woocommerce_settings['inventory'] = apply_filters('woocommerce_inventory_settin
 		'desc' 		=> '',
 		'tip' 		=> '',
 		'id' 		=> 'woocommerce_notify_low_stock_amount',
-		'css' 		=> 'min-width:50px;',
+		'css' 		=> 'width:30px;',
 		'type' 		=> 'text',
 		'std' 		=> '2'
 	),
@@ -586,7 +640,7 @@ $woocommerce_settings['inventory'] = apply_filters('woocommerce_inventory_settin
 		'desc' 		=> '',
 		'tip' 		=> '',
 		'id' 		=> 'woocommerce_notify_no_stock_amount',
-		'css' 		=> 'min-width:50px;',
+		'css' 		=> 'width:30px;',
 		'type' 		=> 'text',
 		'std' 		=> '0'
 	),
@@ -642,35 +696,47 @@ $woocommerce_settings['shipping'] = apply_filters('woocommerce_shipping_settings
 $woocommerce_settings['tax'] = apply_filters('woocommerce_tax_settings', array(
 
 	array(	'name' => __( 'Tax Options', 'woothemes' ), 'type' => 'title','desc' => '', 'id' => 'tax_options' ),
-	
+
 	array(  
-		'name' => __( 'Calculate Taxes', 'woothemes' ),
+		'name' => __( 'Tax calculations', 'woothemes' ),
 		'desc' 		=> __( 'Enable taxes and tax calculations', 'woothemes' ),
 		'id' 		=> 'woocommerce_calc_taxes',
 		'std' 		=> 'yes',
-		'type' 		=> 'checkbox'
+		'type' 		=> 'checkbox',
+		'checkboxgroup'		=> 'start'
 	),
 	
 	array(  
-		'name' => __( 'Prices inclusive of tax', 'woothemes' ),
 		'desc' 		=> __( 'Catalog Prices include tax', 'woothemes' ),
 		'id' 		=> 'woocommerce_prices_include_tax',
 		'std' 		=> 'yes',
-		'type' 		=> 'checkbox'
+		'type' 		=> 'checkbox',
+		'checkboxgroup'		=> ''
 	),
 	
 	array(  
-		'name' => __( 'Cart totals display...', 'woothemes' ),
-		'desc' 		=> '',
-		'tip' 		=> __( 'Should the subtotal be shown including or excluding tax on the frontend?', 'woothemes' ),
-		'id' 		=> 'woocommerce_display_totals_tax',
-		'css' 		=> 'min-width:100px;',
-		'std' 		=> 'excluding',
-		'type' 		=> 'select',
-		'options' => array(  
-			'including' => __( 'price including tax', 'woothemes' ),
-			'excluding'  => __( 'price excluding tax', 'woothemes' )
-		)
+		'desc' 		=> __( 'Round tax at subtotal level, instead of per line', 'woothemes' ),
+		'id' 		=> 'woocommerce_tax_round_at_subtotal',
+		'std' 		=> 'no',
+		'type' 		=> 'checkbox',
+		'checkboxgroup'		=> 'end'
+	),
+	
+	array(  
+		'name' => __( 'Frontend Tax display', 'woothemes' ),
+		'desc' 		=> __( 'Always display cart contents excluding tax', 'woothemes' ),
+		'id' 		=> 'woocommerce_display_cart_prices_excluding_tax',
+		'std' 		=> 'yes',
+		'type' 		=> 'checkbox',
+		'checkboxgroup'		=> 'start'
+	),
+
+	array(  
+		'desc' 		=> __( 'Always display cart totals excluding tax', 'woothemes' ),
+		'id' 		=> 'woocommerce_display_totals_excluding_tax',
+		'std' 		=> 'yes',
+		'type' 		=> 'checkbox',
+		'checkboxgroup'		=> 'end'
 	),
 
 	array(  
@@ -706,6 +772,7 @@ $woocommerce_settings['email'] = apply_filters('woocommerce_email_settings', arr
 		'desc' 		=> __( 'The recipient of new order emails. Defaults to the admin email.', 'woothemes' ),
 		'id' 		=> 'woocommerce_new_order_email_recipient',
 		'type' 		=> 'text',
+		'css' 		=> 'min-width:300px;',
 		'std' 		=> esc_attr(get_option('admin_email'))
 	),
 	
@@ -714,6 +781,7 @@ $woocommerce_settings['email'] = apply_filters('woocommerce_email_settings', arr
 		'desc' 		=> __( 'The recipient of stock emails. Defaults to the admin email.', 'woothemes' ),
 		'id' 		=> 'woocommerce_stock_email_recipient',
 		'type' 		=> 'text',
+		'css' 		=> 'min-width:300px;',
 		'std' 		=> esc_attr(get_option('admin_email'))
 	),
 	
@@ -726,6 +794,7 @@ $woocommerce_settings['email'] = apply_filters('woocommerce_email_settings', arr
 		'desc' 		=> __( 'The sender name for WooCommerce emails.', 'woothemes' ),
 		'id' 		=> 'woocommerce_email_from_name',
 		'type' 		=> 'text',
+		'css' 		=> 'min-width:300px;',
 		'std' 		=> esc_attr(get_bloginfo('name'))
 	),
 	
@@ -734,6 +803,7 @@ $woocommerce_settings['email'] = apply_filters('woocommerce_email_settings', arr
 		'desc' 		=> __( 'The sender email address for WooCommerce emails.', 'woothemes' ),
 		'id' 		=> 'woocommerce_email_from_address',
 		'type' 		=> 'text',
+		'css' 		=> 'min-width:300px;',
 		'std' 		=> get_option('admin_email')
 	),
 	
@@ -746,6 +816,7 @@ $woocommerce_settings['email'] = apply_filters('woocommerce_email_settings', arr
 		'desc' 		=> sprintf(__( 'Enter a URL to an image you want to show in the email\'s header. Upload your image using the <a href="%s">media uploader</a>.', 'woothemes' ), admin_url('media-new.php')),
 		'id' 		=> 'woocommerce_email_header_image',
 		'type' 		=> 'text',
+		'css' 		=> 'min-width:300px;',
 		'std' 		=> ''
 	),
 	
@@ -763,6 +834,7 @@ $woocommerce_settings['email'] = apply_filters('woocommerce_email_settings', arr
 		'desc' 		=> __( 'The base colour for WooCommerce email templates. Default <code>#557da1</code>.', 'woothemes' ),
 		'id' 		=> 'woocommerce_email_base_color',
 		'type' 		=> 'color',
+		'css' 		=> 'width:6em;',
 		'std' 		=> '#557da1'
 	),
 	
@@ -771,6 +843,7 @@ $woocommerce_settings['email'] = apply_filters('woocommerce_email_settings', arr
 		'desc' 		=> __( 'The background colour for WooCommerce email templates. Default <code>#eeeeee</code>.', 'woothemes' ),
 		'id' 		=> 'woocommerce_email_background_color',
 		'type' 		=> 'color',
+		'css' 		=> 'width:6em;',
 		'std' 		=> '#eeeeee'
 	),
 	
@@ -779,6 +852,7 @@ $woocommerce_settings['email'] = apply_filters('woocommerce_email_settings', arr
 		'desc' 		=> __( 'The main body background colour. Default <code>#fdfdfd</code>.', 'woothemes' ),
 		'id' 		=> 'woocommerce_email_body_background_color',
 		'type' 		=> 'color',
+		'css' 		=> 'width:6em;',
 		'std' 		=> '#fdfdfd'
 	),
 	
@@ -787,6 +861,7 @@ $woocommerce_settings['email'] = apply_filters('woocommerce_email_settings', arr
 		'desc' 		=> __( 'The main body text colour. Default <code>#505050</code>.', 'woothemes' ),
 		'id' 		=> 'woocommerce_email_text_color',
 		'type' 		=> 'color',
+		'css' 		=> 'width:6em;',
 		'std' 		=> '#505050'
 	),
 	
@@ -823,7 +898,7 @@ function woocommerce_settings() {
 		do_action( 'woocommerce_update_options' );
 		do_action( 'woocommerce_update_options_' . $current_tab );
 		flush_rewrite_rules( false );
-		wp_redirect( add_query_arg( 'saved', 'true', admin_url( 'admin.php?page=woocommerce&tab=' . $current_tab ) ) );
+		wp_redirect( add_query_arg( 'subtab', esc_attr(str_replace('#', '', $_POST['subtab'])), add_query_arg( 'saved', 'true', admin_url( 'admin.php?page=woocommerce&tab=' . $current_tab ) )) );
     endif;
     
     if (isset($_GET['saved']) && $_GET['saved']) :
@@ -900,6 +975,9 @@ function woocommerce_settings() {
 						'payment_gateways' => __( 'Payment Gateways', 'woothemes' ),
 						'email' => __( 'Emails', 'woothemes' ),
 					);
+					
+					$tabs = apply_filters('woocommerce_settings_tabs_array', $tabs);
+					
 					foreach ($tabs as $name => $label) :
 						echo '<a href="' . admin_url( 'admin.php?page=woocommerce&tab=' . $name ) . '" class="nav-tab ';
 						if( $current_tab==$name ) echo 'nav-tab-active';
@@ -966,7 +1044,10 @@ function woocommerce_settings() {
 					break;
 				endswitch;
 			?>
-	        <p class="submit"><input name="save" class="button-primary" type="submit" value="<?php _e( 'Save changes', 'woothemes' ); ?>" /></p>
+	        <p class="submit">
+	        	<input name="save" class="button-primary" type="submit" value="<?php _e( 'Save changes', 'woothemes' ); ?>" />
+	        	<input type="hidden" name="subtab" id="last_tab" />
+	        </p>
 		</form>
 		
 		<script type="text/javascript">
@@ -980,23 +1061,20 @@ function woocommerce_settings() {
 				jQuery(this).addClass('current');
 				jQuery('.section', jQuery(this).closest('.subsubsub_section')).hide();
 				jQuery( jQuery(this).attr('href') ).show();
+				jQuery('#last_tab').val( jQuery(this).attr('href') );
 				return false;
 			});
+			
+			<?php if (isset($_GET['subtab']) && $_GET['subtab']) echo 'jQuery("ul.subsubsub li a[href=#'.$_GET['subtab'].']").click();'; ?>
 			
 			// Countries
 			jQuery('select#woocommerce_allowed_countries').change(function(){
 				if (jQuery(this).val()=="specific") {
-					jQuery(this).parent().parent().next('tr.multi_select_countries').show();
+					jQuery(this).parent().parent().next('tr').show();
 				} else {
-					jQuery(this).parent().parent().next('tr.multi_select_countries').hide();
+					jQuery(this).parent().parent().next('tr').hide();
 				}
 			}).change();
-			
-			// Country Multiselect boxes
-			jQuery(".country_multiselect").multiselect({
-				noneSelectedText: '<?php _e( 'Select countries/states', 'woothemes' ); ?>',
-				selectedList: 4
-			});
 			
 			// Color picker
 			jQuery('.colorpick').each(function(){
@@ -1031,6 +1109,13 @@ function woocommerce_settings() {
 				jQuery('.submit input').click(function(){
 					window.onbeforeunload = '';
 				});
+			});
+			
+			// Chosen selects
+			jQuery("select.chosen_select").chosen();
+			
+			jQuery("select.chosen_select_nostd").chosen({
+				allow_single_deselect: 'true'
 			});
 		</script>
 	</div>

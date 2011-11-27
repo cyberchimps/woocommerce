@@ -237,7 +237,7 @@ function woocommerce_product_data_box() {
 										</td>
 										<td class="values">
 										<?php if ($tax->attribute_type=="select") : ?>
-											<select multiple="multiple" class="multiselect" name="attribute_values[<?php echo $i; ?>][]">
+											<select multiple="multiple" data-placeholder="<?php _e('Select terms', 'woothemes'); ?>" class="multiselect" name="attribute_values[<?php echo $i; ?>][]">
 												<?php
 					        					$all_terms = get_terms( $attribute_taxonomy_name, 'orderby=name&hide_empty=0' );
 				        						if ($all_terms) :
@@ -504,7 +504,7 @@ function woocommerce_process_product_meta( $post_id, $post ) {
 			 	endif;
 		 	else :
 		 		// Format values
-		 		$values = htmlspecialchars(stripslashes($attribute_values[$i]));
+		 		$values = esc_html(stripslashes($attribute_values[$i]));
 		 		// Text based, separate by pipe
 		 		$values = explode('|', $values);
 		 		$values = array_map('trim', $values);
@@ -544,6 +544,9 @@ function woocommerce_process_product_meta( $post_id, $post ) {
 	wp_set_object_terms($post_id, $product_type, 'product_type');
 	update_post_meta( $post_id, 'downloadable', $is_downloadable );
 	update_post_meta( $post_id, 'virtual', $is_virtual );
+	
+	// Set transient for product type
+	set_transient( 'woocommerce_product_type_' . $post_id, $product_type );
 
 	// Sales and prices
 	if ($product_type=='simple' || $product_type=='external') :
@@ -601,10 +604,10 @@ function woocommerce_process_product_meta( $post_id, $post ) {
 		
 		$children_by_price = get_posts( array(
 			'post_parent' 	=> $post_parent,
-			'orderby' 	=> 'meta_value_num',
-			'order'		=> 'asc',
-			'meta_key'	=> 'price',
-			'posts_per_page' => 1,
+			'orderby' 		=> 'meta_value_num',
+			'order'			=> 'asc',
+			'meta_key'		=> 'price',
+			'posts_per_page'=> 1,
 			'post_type' 	=> 'product',
 			'fields' 		=> 'ids'
 		));
@@ -614,6 +617,9 @@ function woocommerce_process_product_meta( $post_id, $post ) {
 				update_post_meta( $post_parent, 'price', $child_price );
 			endforeach;
 		endif;
+		
+		// Clear cache/transients
+		$woocommerce->clear_product_transients( $post_parent );
 	endif;
 	
 	// Stock Data
@@ -688,7 +694,7 @@ function woocommerce_process_product_meta( $post_id, $post ) {
 	do_action( 'woocommerce_process_product_meta_' . $product_type, $post_id );
 	
 	// Clear cache/transients
-	$woocommerce->clear_product_transients();
+	$woocommerce->clear_product_transients( $post_id );
 		
 	// Save errors
 	update_option('woocommerce_errors', $woocommerce_errors);

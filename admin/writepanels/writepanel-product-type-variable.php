@@ -122,9 +122,9 @@ function variable_product_type_options() {
 							</tr>
 							<tr>
 							
-								<td><label><?php _e('Downloadable', 'woothemes'); ?> <a class="tips" tip="<?php _e('Enable this option if access is given to a downloadable file upon purchase of a product.', 'woothemes'); ?>" href="#">[?]</a></label><input type="checkbox" class="checkbox variable_is_downloadable" name="variable_is_downloadable[<?php echo $loop; ?>]" <?php checked($variation_data['downloadable'][0], 'yes'); ?> /></td>
+								<td><label><?php _e('Downloadable', 'woothemes'); ?> <a class="tips" tip="<?php _e('Enable this option if access is given to a downloadable file upon purchase of a product.', 'woothemes'); ?>" href="#">[?]</a></label><input type="checkbox" class="checkbox variable_is_downloadable" name="variable_is_downloadable[<?php echo $loop; ?>]" <?php if (isset($variation_data['downloadable'][0])) checked($variation_data['downloadable'][0], 'yes'); ?> /></td>
 
-								<td><label><?php _e('Virtual', 'woothemes'); ?> <a class="tips" tip="<?php _e('Enable this option if a product is not shipped or there is no shipping cost.', 'woothemes'); ?>" href="#">[?]</a></label><input type="checkbox" class="checkbox" name="variable_is_virtual[<?php echo $loop; ?>]" <?php checked($variation_data['virtual'][0], 'yes'); ?> /></td>
+								<td><label><?php _e('Virtual', 'woothemes'); ?> <a class="tips" tip="<?php _e('Enable this option if a product is not shipped or there is no shipping cost.', 'woothemes'); ?>" href="#">[?]</a></label><input type="checkbox" class="checkbox" name="variable_is_virtual[<?php echo $loop; ?>]" <?php if (isset($variation_data['virtual'][0])) checked($variation_data['virtual'][0], 'yes'); ?> /></td>
 								
 								<td><label><?php _e('Enabled', 'woothemes'); ?></label><input type="checkbox" class="checkbox" name="variable_enabled[<?php echo $loop; ?>]" <?php checked($variation->post_status, 'publish'); ?> /></td>
 								
@@ -254,7 +254,7 @@ function variable_product_write_panel_js() {
 								if ($attribute['is_taxonomy']) :
 									$post_terms = wp_get_post_terms( $post->ID, $attribute['name'] );
 									foreach ($post_terms as $term) :
-										echo '<option value="'.$term->slug.'">'.$term->name.'</option>';
+										echo '<option value="'.$term->slug.'">'.esc_html($term->name).'</option>';
 									endforeach;
 								else :
 									$options = explode('|', $attribute['value']);
@@ -301,7 +301,11 @@ function variable_product_write_panel_js() {
 					</table>\
 				</div>');
 				
-				jQuery(".tips").easyTooltip();
+				jQuery(".tips").tipTip({
+			    	'attribute' : 'tip',
+			    	'fadeIn' : 50,
+			    	'fadeOut' : 50
+			    });
 				jQuery('.woocommerce_variations').unblock();
 
 			});
@@ -547,7 +551,7 @@ function woocommerce_link_all_variations() {
 	$_product = &new woocommerce_product( $post_id );
 		
 	// Put variation attributes into an array
-	foreach ($_product->attributes as $attribute) :
+	foreach ($_product->get_attributes() as $attribute) :
 								
 		if ( !$attribute['is_variation'] ) continue;
 		
@@ -575,10 +579,10 @@ function woocommerce_link_all_variations() {
 	// Get existing variations so we don't create duplicated
     $available_variations = array();
     
-    foreach($_product->get_children() as $child) {
-        $variation = $child->product;
-        if($variation instanceof woocommerce_product_variation) {
-            $available_variations[] = $variation->get_variation_attributes();
+    foreach($_product->get_children() as $child_id) {
+    	$child = $_product->get_child( $child_id );
+        if($child instanceof woocommerce_product_variation) {
+            $available_variations[] = $child->get_variation_attributes();
         }
     }
 	

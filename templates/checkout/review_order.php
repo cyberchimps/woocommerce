@@ -11,9 +11,14 @@
 		</thead>
 		<tfoot>
 			<tr>
-				<td colspan="2"><?php _e('Subtotal', 'woothemes'); ?></td>
+				<td colspan="2"><?php _e('Cart Subtotal', 'woothemes'); ?></td>
 				<td><?php echo $woocommerce->cart->get_cart_subtotal(); ?></td>
 			</tr>
+			
+			<?php if ($woocommerce->cart->get_discounts_before_tax()) : ?><tr class="discount">
+				<td colspan="2"><?php _e('Cart Discount', 'woothemes'); ?></td>
+				<td>-<?php echo $woocommerce->cart->get_discounts_before_tax(); ?></td>
+			</tr><?php endif; ?>
 			
 			<?php  if ($woocommerce->cart->needs_shipping()) : ?>
 				<td colspan="2"><?php _e('Shipping', 'woothemes'); ?></td>
@@ -66,12 +71,13 @@
 				<td><?php echo $woocommerce->cart->get_cart_tax(); ?></td>
 			</tr><?php endif; ?>
 
-			<?php if ($woocommerce->cart->get_total_discount()) : ?><tr class="discount">
-				<td colspan="2"><?php _e('Discount', 'woothemes'); ?></td>
-				<td>-<?php echo $woocommerce->cart->get_total_discount(); ?></td>
+			<?php if ($woocommerce->cart->get_discounts_after_tax()) : ?><tr class="discount">
+				<td colspan="2"><?php _e('Order Discount', 'woothemes'); ?></td>
+				<td>-<?php echo $woocommerce->cart->get_discounts_after_tax(); ?></td>
 			</tr><?php endif; ?>
+			
 			<tr>
-				<td colspan="2"><strong><?php _e('Grand Total', 'woothemes'); ?></strong></td>
+				<td colspan="2"><strong><?php _e('Order Total', 'woothemes'); ?></strong></td>
 				<td><strong><?php echo $woocommerce->cart->get_total(); ?></strong></td>
 			</tr>
 		</tfoot>
@@ -85,7 +91,7 @@
 							<tr>
 								<td class="product-name">'.$_product->get_title().$woocommerce->cart->get_item_data( $values ).'</td>
 								<td>'.$values['quantity'].'</td>
-								<td>'.woocommerce_price($_product->get_price_excluding_tax()*$values['quantity'], array('ex_tax_label' => 1)).'</td>
+								<td>' . $woocommerce->cart->get_product_subtotal( $_product, $values['quantity'] ) . '</td>
 							</tr>';
 					endif;
 				endforeach; 
@@ -138,7 +144,7 @@
 			
 			<?php do_action( 'woocommerce_review_order_before_submit' ); ?>
 			
-			<input type="submit" class="button alt" name="place_order" id="place_order" value="<?php _e('Place order', 'woothemes'); ?>" />
+			<input type="submit" class="button alt" name="place_order" id="place_order" value="<?php echo apply_filters('woocommerce_order_button_text', __('Place order', 'woothemes')); ?>" />
 			
 			<?php if (get_option('woocommerce_terms_page_id')>0) : ?>
 			<p class="form-row terms">
@@ -150,6 +156,8 @@
 			<?php do_action( 'woocommerce_review_order_after_submit' ); ?>
 			
 		</div>
+		
+		<div class="clear"></div>
 
 	</div>
 	

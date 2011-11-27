@@ -9,12 +9,14 @@ jQuery(document).ready(function($) {
 			var thisbutton = $(this);
 			
 			if (thisbutton.is('.product_type_simple, .product_type_downloadable, .product_type_virtual')) {
-		
+				
+				if (!$(thisbutton).attr('data-product_id')) return true;
+				
 				$(thisbutton).addClass('loading');
 				
 				var data = {
 					action: 		'woocommerce_add_to_cart',
-					product_id: 	$(thisbutton).attr('rel'),
+					product_id: 	$(thisbutton).attr('data-product_id'),
 					security: 		woocommerce_params.add_to_cart_nonce
 				};
 				
@@ -203,16 +205,15 @@ jQuery(document).ready(function($) {
 			}
 			if ($(state_box).is('input')) {
 				// Change for select
-				$(state_box).replaceWith('<select name="' + input_name + '" id="' + input_id + '"><option value="">' + woocommerce_params.select_state_text + '</option></select>');
+				$(state_box).replaceWith('<select name="' + input_name + '" id="' + input_id + '"></select>');
 				state_box = $('#' + $(this).attr('rel'));
 			}
-			$(state_box).html(options);
+			$(state_box).html( '<option value="">' + woocommerce_params.select_state_text + '</option>' + options);
 			
 			$(state_box).val(value);
 		} else {
 			if ($(state_box).is('select')) {
-				$(state_box).replaceWith('<input type="text" placeholder="' + woocommerce_params.state_text + '" name="' + input_name + '" id="' + input_id + '" />');
-				state_box = $('#' + $(this).attr('rel'));
+				$(state_box).replaceWith('<input type="text" class="input-text" placeholder="' + woocommerce_params.state_text + '" name="' + input_name + '" id="' + input_id + '" />');
 			}
 		}
 		
@@ -245,11 +246,9 @@ jQuery(document).ready(function($) {
 	$('.shipping-calculator-form').hide();
 	
 	$('.shipping-calculator-button').click(function() {
-	  $('.shipping-calculator-form').slideToggle('slow');
+		$('.shipping-calculator-form').slideToggle('slow');
+		return false;
 	}); 
-	
-	// Stop anchors moving the viewport
-	$(".shipping-calculator-button").click(function() {return false;});
 	
 	// Variations
 	
@@ -275,6 +274,9 @@ jQuery(document).ready(function($) {
         for (var i = 0; i < product_variations.length; i++) {
         	var variation = product_variations[i];
         	var variation_id = variation.variation_id;
+        	
+        	//console.debug(variation.attributes);
+        	//console.debug(settings);
         	
 			if(variations_match(variation.attributes, settings)) {
                 matching.push(variation);
@@ -306,7 +308,17 @@ jQuery(document).ready(function($) {
 	                
 	                if(attr_name == current_attr_name) {
 	                    if (attr_val) {
+	                    	
+	                    	// Decode entities
+	                    	attr_val = $("<div/>").html( attr_val ).text();
+	                    	
+	                    	// Add slashes
+	                    	attr_val = attr_val.replace(/'/g, "\\'");
+	                    	attr_val = attr_val.replace(/"/g, "\\\"");
+	                    	
+	                    	// Compare the meercat
 	                    	current_attr_select.find('option[value="'+attr_val+'"]').removeAttr('disabled');
+	                    	
 	                    } else {
 	                    	current_attr_select.find('option').removeAttr('disabled');
 	                    }
@@ -365,10 +377,14 @@ jQuery(document).ready(function($) {
 			} else {
 				if ($(this).val().length == 0) all_set = false;
 
-	            // Get value
-	            value = $(this).val();
-	            value = value.replace('"', '&quot;');
-				
+            	// Encode entities
+            	value = $(this).val()
+		            .replace(/&/g, '&amp;')
+		            .replace(/"/g, '&quot;')
+		            .replace(/'/g, '&#039;')
+		            .replace(/</g, '&lt;')
+		            .replace(/>/g, '&gt;');
+
 				// Add to settings array
 				current_settings[$(this).attr('name')] = value;
 			}
@@ -551,7 +567,10 @@ jQuery(document).ready(function($) {
 			/* AJAX Form Submission */
 			$('form.checkout').submit(function(){
 				var form = this;
-				$(form).block({message: null, overlayCSS: {background: '#fff url(' + woocommerce_params.plugin_url + '/assets/images/ajax-loader.gif) no-repeat center', opacity: 0.6}});
+				
+				if ($(form).is('.processing')) return false;
+				
+				$(form).addClass('processing').block({message: null, overlayCSS: {background: '#fff url(' + woocommerce_params.plugin_url + '/assets/images/ajax-loader.gif) no-repeat center', opacity: 0.6}});
 				$.ajax({
 					type: 		'POST',
 					url: 		woocommerce_params.checkout_url,
@@ -564,7 +583,7 @@ jQuery(document).ready(function($) {
 							}
 							catch(err) {
 							  	$(form).prepend( code );
-								$(form).unblock(); 
+								$(form).removeClass('processing').unblock(); 
 								
 								$('html, body').animate({
 								    scrollTop: ($('form.checkout').offset().top - 100)

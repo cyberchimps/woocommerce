@@ -40,7 +40,10 @@ function woocommerce_price_filter( $filtered_posts ) {
 		$matched_products = array();
 		
 		$matched_products_query = get_posts(array(
-			'post_type' => 'product',
+			'post_type' => array(
+				'product_variation',
+				'product'
+			),
 			'post_status' => 'publish',
 			'posts_per_page' => -1,
 			'meta_query' => array(
@@ -55,8 +58,9 @@ function woocommerce_price_filter( $filtered_posts ) {
 
 		if ($matched_products_query) :
 			foreach ($matched_products_query as $product) :
-				$matched_products[] = $product->ID;
-				if ($product->post_parent>0) $matched_products[] = $product->post_parent;
+				if ($product->post_type == 'product') $matched_products[] = $product->ID;
+				if ($product->post_parent>0 && !in_array($product->post_parent, $matched_products))
+					$matched_products[] = $product->post_parent;
 			endforeach;
 		endif;
 		
@@ -105,10 +109,10 @@ class WooCommerce_Widget_Price_Filter extends WP_Widget {
 	function widget( $args, $instance ) {
 		extract($args);
 		
+		global $_chosen_attributes, $wpdb, $woocommerce, $wp_query;
+		
 		if (!is_tax( 'product_cat' ) && !is_post_type_archive('product') && !is_tax( 'product_tag' )) return;
-		
-		global $_chosen_attributes, $wpdb, $woocommerce;
-		
+
 		$title = $instance['title'];
 		$title = apply_filters('widget_title', $title, $instance, $this->id_base);
 		
@@ -120,26 +124,38 @@ class WooCommerce_Widget_Price_Filter extends WP_Widget {
 		if (get_search_query()) $fields = '<input type="hidden" name="s" value="'.get_search_query().'" />';
 		if (isset($_GET['post_type'])) $fields .= '<input type="hidden" name="post_type" value="'.esc_attr( $_GET['post_type'] ).'" />';
 		
-		if ($_chosen_attributes) foreach ($_chosen_attributes as $attribute => $value) :
+		if ($_chosen_attributes) foreach ($_chosen_attributes as $attribute => $data) :
 		
-			$fields .= '<input type="hidden" name="'.esc_attr( str_replace('pa_', 'filter_', $attribute) ).'" value="'.esc_attr( implode(',', $value) ).'" />';
+			$fields .= '<input type="hidden" name="'.esc_attr( str_replace('pa_', 'filter_', $attribute) ).'" value="'.esc_attr( implode(',', $data['terms']) ).'" />';
+			if ($data['query_type']=='or') $fields .= '<input type="hidden" name="'.esc_attr( str_replace('pa_', 'query_type_', $attribute) ).'" value="or" />';
 		
 		endforeach;
 		
 		$min = 0;
 		
-		$max = ceil($wpdb->get_var("SELECT max(meta_value + 0) 
-		FROM $wpdb->posts
-		LEFT JOIN $wpdb->postmeta ON $wpdb->posts.ID = $wpdb->postmeta.post_id
-		WHERE meta_key = 'price' AND (
-			$wpdb->posts.ID IN (".implode(',', $woocommerce->query->layered_nav_product_ids).") 
-			OR (
-				$wpdb->posts.post_parent IN (".implode(',', $woocommerce->query->layered_nav_product_ids).")
-				AND $wpdb->posts.post_parent != 0
-			)
-		)"));
+		if (sizeof($woocommerce->query->layered_nav_product_ids)==0) :
+
+			$max = ceil($wpdb->get_var("SELECT max(meta_value + 0) 
+			FROM $wpdb->posts
+			LEFT JOIN $wpdb->postmeta ON $wpdb->posts.ID = $wpdb->postmeta.post_id
+			WHERE meta_key = 'price'"));
+
+		else :
 		
-		echo '<form method="get" action="">
+			$max = ceil($wpdb->get_var("SELECT max(meta_value + 0) 
+			FROM $wpdb->posts
+			LEFT JOIN $wpdb->postmeta ON $wpdb->posts.ID = $wpdb->postmeta.post_id
+			WHERE meta_key = 'price' AND (
+				$wpdb->posts.ID IN (".implode(',', $woocommerce->query->layered_nav_product_ids).") 
+				OR (
+					$wpdb->posts.post_parent IN (".implode(',', $woocommerce->query->layered_nav_product_ids).")
+					AND $wpdb->posts.post_parent != 0
+				)
+			)"));
+		
+		endif;
+		
+		echo '<form method="get">
 			<div class="price_slider_wrapper">
 				<div class="price_slider"></div>
 				<div class="price_slider_amount">

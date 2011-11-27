@@ -4,6 +4,8 @@
  * 
  * Actions/functions/hooks for WooCommerce related events.
  *
+ *		- Prevent non-admin access to backend
+ *		- Clear cart on logout
  *		- Update catalog ordering if posted
  *		- AJAX update shipping method on cart page
  *		- AJAX update order review on checkout
@@ -26,6 +28,37 @@
  * @category	Actions
  * @author		WooThemes
  */
+
+
+/**
+ * Prevent non-admin access to backend
+ */
+if (get_option('woocommerce_lock_down_admin')=='yes') add_action('admin_init', 'woocommerce_prevent_admin_access');
+
+function woocommerce_prevent_admin_access() {
+	
+	if ( is_admin() && !is_ajax() && !current_user_can('edit_posts') ) :
+		wp_safe_redirect(get_permalink(get_option('woocommerce_myaccount_page_id')));
+		exit;
+	endif;
+	
+}
+
+/**
+ * Clear cart on logout
+ */
+add_action('wp_logout', 'woocommerce_clear_cart_on_logout');
+
+function woocommerce_clear_cart_on_logout() {
+	
+	if (get_option('woocommerce_clear_cart_on_logout')=='yes') :
+		
+		global $woocommerce;
+		
+		$woocommerce->cart->empty_cart();
+		
+	endif;
+}
 
 /**
 * WP Affiliate eCommerce tracking
@@ -170,6 +203,41 @@ function woocommerce_increase_coupon_counts() {
 		$coupon = &new woocommerce_coupon( $code );
 		$coupon->inc_usage_count();
 	endforeach;
+}
+
+/**
+ * Get customer details via ajax
+ */
+add_action('wp_ajax_woocommerce_get_customer_details', 'woocommerce_get_customer_details');
+
+function woocommerce_get_customer_details() {
+	
+	global $woocommerce;
+
+	check_ajax_referer( 'get-customer-details', 'security' );
+
+	$user_id = (int) trim(stripslashes($_POST['user_id']));
+	$type_to_load = esc_attr(trim(stripslashes($_POST['type_to_load'])));
+	
+	$customer_data = array(
+		$type_to_load . '_first_name' => get_user_meta( $user_id, $type_to_load . '_first_name', true ),
+		$type_to_load . '_last_name' => get_user_meta( $user_id, $type_to_load . '_last_name', true ),
+		$type_to_load . '_company' => get_user_meta( $user_id, $type_to_load . '_company', true ),
+		$type_to_load . '_address_1' => get_user_meta( $user_id, $type_to_load . '_address_1', true ),
+		$type_to_load . '_address_2' => get_user_meta( $user_id, $type_to_load . '_address_2', true ),
+		$type_to_load . '_city' => get_user_meta( $user_id, $type_to_load . '_city', true ),
+		$type_to_load . '_postcode' => get_user_meta( $user_id, $type_to_load . '_postcode', true ),
+		$type_to_load . '_country' => get_user_meta( $user_id, $type_to_load . '_country', true ),
+		$type_to_load . '_state' => get_user_meta( $user_id, $type_to_load . '_state', true ),
+		$type_to_load . '_email' => get_user_meta( $user_id, $type_to_load . '_email', true ),
+		$type_to_load . '_phone' => get_user_meta( $user_id, $type_to_load . '_phone', true ),
+	);
+	
+	echo json_encode($customer_data);
+	
+	// Quit out
+	die();
+	
 }
 
 /**
@@ -669,6 +737,101 @@ function woocommerce_process_login() {
 	endif;	
 }
 
+
+/**
+ * Process the registration form
+ **/
+add_action('init', 'woocommerce_process_registration');
+ 
+function woocommerce_process_registration() {
+	
+	global $woocommerce;
+	
+	if (isset($_POST['register']) && $_POST['register']) :
+	
+		$woocommerce->verify_nonce('register');
+		
+		// Get fields
+		$sanitized_user_login 	= (isset($_POST['username'])) ? sanitize_user(trim($_POST['username'])) : '';
+		$user_email 		= (isset($_POST['email'])) ? esc_attr(trim($_POST['email'])) : '';
+		$password	= (isset($_POST['password'])) ? esc_attr(trim($_POST['password'])) : '';
+		$password2 	= (isset($_POST['password2'])) ? esc_attr(trim($_POST['password2'])) : '';
+		
+		$user_email = apply_filters( 'user_registration_email', $user_email );
+		
+		// Check the username
+		if ( $sanitized_user_login == '' ) {
+			$woocommerce->add_error( __( '<strong>ERROR</strong>: Please enter a username.' ) );
+		} elseif ( ! validate_username( $_POST['username'] ) ) {
+			$woocommerce->add_error( __( '<strong>ERROR</strong>: This username is invalid because it uses illegal characters. Please enter a valid username.' ) );
+			$sanitized_user_login = '';
+		} elseif ( username_exists( $sanitized_user_login ) ) {
+			$woocommerce->add_error( __( '<strong>ERROR</strong>: This username is already registered, please choose another one.' ) );
+		}
+	
+		// Check the e-mail address
+		if ( $user_email == '' ) {
+			$woocommerce->add_error( __( '<strong>ERROR</strong>: Please type your e-mail address.' ) );
+		} elseif ( ! is_email( $user_email ) ) {
+			$woocommerce->add_error( __( '<strong>ERROR</strong>: The email address isn&#8217;t correct.' ) );
+			$user_email = '';
+		} elseif ( email_exists( $user_email ) ) {
+			$woocommerce->add_error( __( '<strong>ERROR</strong>: This email is already registered, please choose another one.' ) );
+		}
+	
+		// Password
+		if ( !$password ) $woocommerce->add_error( __('Password is required.', 'woothemes') );
+		if ( !$password2 ) $woocommerce->add_error( __('Re-enter your password.', 'woothemes') );
+		if ( $password != $password2 ) $woocommerce->add_error( __('Passwords do not match.', 'woothemes') );
+		
+		// Spam trap
+		if (isset($_POST['email_2']) && $_POST['email_2']) $woocommerce->add_error( __('Anti-spam field was filled in.', 'woothemes') );
+		
+		if ($woocommerce->error_count()==0) :
+			
+			$reg_errors = new WP_Error();
+			do_action('register_post', $sanitized_user_login, $user_email, $reg_errors);
+			$reg_errors = apply_filters( 'registration_errors', $reg_errors, $sanitized_user_login, $user_email );
+	
+            // if there are no errors, let's create the user account
+			if ( !$reg_errors->get_error_code() ) :
+
+                $user_id 	= wp_create_user( $sanitized_user_login, $password, $user_email );
+                
+                if ( !$user_id ) {
+                	$woocommerce->add_error( sprintf(__('<strong>ERROR</strong>: Couldn&#8217;t register you... please contact the <a href="mailto:%s">webmaster</a> !', 'woothemes'), get_option('admin_email')));
+                    return;
+                }
+
+                // Change role
+                wp_update_user( array ('ID' => $user_id, 'role' => 'customer') ) ;
+
+                // send the user a confirmation and their login details
+                woocommerce_customer_new_account( $user_id, $password );
+
+                // set the WP login cookie
+                $secure_cookie = is_ssl() ? true : false;
+                wp_set_auth_cookie($user_id, true, $secure_cookie);
+                
+                // Redirect
+                if ( isset($_SERVER['HTTP_REFERER'])) :
+					wp_safe_redirect($_SERVER['HTTP_REFERER']);
+					exit;
+				endif;
+				wp_redirect(get_permalink(get_option('woocommerce_myaccount_page_id')));
+				exit;
+			
+			else :
+				$woocommerce->add_error( $reg_errors->get_error_message() );
+            	return;                 
+			endif;
+			
+		endif;
+	
+	endif;	
+}
+
+
 /**
  * Process ajax checkout form
  */
@@ -740,18 +903,36 @@ function woocommerce_download_product() {
 		global $wpdb;
 		
 		$download_file = (int) urldecode($_GET['download_file']);
-		$order = urldecode( $_GET['order'] );
+		$order_key = urldecode( $_GET['order'] );
 		$email = urldecode( $_GET['email'] );
 		
-		if (!is_email($email)) wp_safe_redirect( home_url() );
+		if (!is_email($email)) :
+			wp_die( sprintf(__('Invalid email address. <a href="%s">Go to homepage &rarr;</a>', 'woothemes'), home_url()) );
+		endif;
 		
-		$downloads_remaining = $wpdb->get_var( $wpdb->prepare("
-			SELECT downloads_remaining 
+		$download_result = $wpdb->get_row( $wpdb->prepare("
+			SELECT order_id, downloads_remaining 
 			FROM ".$wpdb->prefix."woocommerce_downloadable_product_permissions
 			WHERE user_email = %s
 			AND order_key = %s
 			AND product_id = %s
-		;", $email, $order, $download_file ) );
+		;", $email, $order_key, $download_file ) );
+		
+		if (!$download_result) :
+			wp_die( sprintf(__('Invalid download. <a href="%s">Go to homepage &rarr;</a>', 'woothemes'), home_url()) );
+			exit;
+		endif;
+		
+		$order_id = $download_result->order_id;
+		$downloads_remaining = $download_result->downloads_remaining;
+		
+		if ($order_id) :
+			$order = &new woocommerce_order( $order_id );
+			if ($order->status!='completed' && $order->status!='processing') :
+				wp_die( sprintf(__('Invalid order. <a href="%s">Go to homepage &rarr;</a>', 'woothemes'), home_url()) );
+				exit;
+			endif;
+		endif;
 		
 		if ($downloads_remaining=='0') :
 			wp_die( sprintf(__('Sorry, you have reached your download limit for this file. <a href="%s">Go to homepage &rarr;</a>', 'woothemes'), home_url()) );
@@ -762,7 +943,7 @@ function woocommerce_download_product() {
 					'downloads_remaining' => $downloads_remaining - 1, 
 				), array( 
 					'user_email' => $email,
-					'order_key' => $order,
+					'order_key' => $order_key,
 					'product_id' => $download_file 
 				), array( '%d' ), array( '%s', '%s', '%d' ) );
 			endif;
@@ -890,6 +1071,7 @@ function woocommerce_downloadable_product_permissions( $order_id ) {
 					'product_id' => $download_id, 
 					'user_id' => $order->user_id,
 					'user_email' => $user_email,
+					'order_id' => $order->id,
 					'order_key' => $order->order_key,
 					'downloads_remaining' => $limit
 				), array( 
@@ -897,6 +1079,7 @@ function woocommerce_downloadable_product_permissions( $order_id ) {
 					'%s', 
 					'%s', 
 					'%s', 
+					'%s',
 					'%s'
 				) );	
 				
@@ -917,6 +1100,7 @@ function woocommerce_google_tracking() {
 	global $woocommerce;
 	
 	if (!get_option('woocommerce_ga_standard_tracking_enabled')) return;
+	if (is_admin()) return; // Don't track admin
 	
 	$tracking_id = get_option('woocommerce_ga_id');
 	
@@ -963,6 +1147,7 @@ function woocommerce_ecommerce_tracking( $order_id ) {
 	global $woocommerce;
 	
 	if (!get_option('woocommerce_ga_ecommerce_tracking_enabled')) return;
+	if (is_admin()) return; // Don't track admin
 	
 	$tracking_id = get_option('woocommerce_ga_id');
 	
